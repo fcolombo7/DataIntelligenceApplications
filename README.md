@@ -15,7 +15,7 @@ Each customers’ class is characterized by:
 - a stochastic cost per click as a function of the bid;
 - a conversion rate function providing the probability that a user will buy the item given a price;
 - a distribution probability over the number of times the user will come back to the ecommerce website to buy that item by 30 days after the first purchase (and simulate such visits in future).
-- Every price available is associated with a margin obtained by the sale that is known beforehand. Do not need to simulate the functioning of the auctions and the other advertisers.
+Every price available is associated with a margin obtained by the sale that is known beforehand. Do not need to simulate the functioning of the auctions and the other advertisers.
 
 ### Steps
 1. Formulate the objective function when assuming that, once a user makes a purchase with a price p, then the ecommerce will propose the same price p to future visits of the same user and this user will surely buy the item. The revenue function must take into account the cost per click, while there is no budget constraint.  
