@@ -1,7 +1,8 @@
 import numpy as np
+from abc import ABC, abstractmethod
 
 
-class Learner:
+class Learner(ABC):
     """
     Abstract class used to represent online learning algorithms.
     :param n_arms: the number of arms that can be pulled
@@ -24,6 +25,7 @@ class Learner:
         self.rewards_per_arm[pulled_arm].append(reward)
         self.collected_rewards = np.append(self.collected_rewards, reward)
 
+    @abstractmethod
     def pull_arm(self) -> int:
         """
         Compute the best arm to pull according to the current parameter of the learner.
@@ -32,6 +34,7 @@ class Learner:
         """
         pass
 
+    @abstractmethod
     def update(self, pulled_arm, reward):
         """
         Update the parameters of the learner according the the reward received by the environment, and the pulled arm.
