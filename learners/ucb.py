@@ -7,9 +7,12 @@ class UCB(Learner):
     def __init__(self, n_arms):
         super().__init__(n_arms)
         self.empirical_means = np.zeros(self.n_arms)
-        self.confidences = np.array([np.inf]*n_arms)
+        #self.confidences = np.array([np.inf]*n_arms)
+        self.confidences = np.zeros(self.n_arms)
 
     def pull_arm(self) -> int:
+        if self.t < self.n_arms:
+            return self.t
         upper_bounds = self.empirical_means + self.confidences
         best_arms = np.argwhere(upper_bounds == upper_bounds.max()).reshape(-1)
         return np.random.choice(best_arms)
