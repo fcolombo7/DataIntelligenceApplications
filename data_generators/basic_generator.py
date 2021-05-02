@@ -93,8 +93,8 @@ class BasicDataGenerator(DataGenerator):
 
     def get_daily_clicks(self, mode='all'):
         """
-        Get the distribution probability over the number of times the user will come back to the
-        ecommerce website to buy another consumable item by 30 days after the first purchase (at the same price).
+        Get the distribution probability over the number of daily clicks with respect to the bid of the advertisement 
+        campaign given the price.
         \nThe output depends on the `mode` kwarg.
         [options: mode = `all` -> disjoint (default), mode = `aggregate` -> aggregation performed as a weighted average]
         \nModel: `upper_bound` * (1.0 - exp(-1 * `speed_factor` * `bids`))
