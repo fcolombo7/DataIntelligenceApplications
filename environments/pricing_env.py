@@ -19,6 +19,9 @@ class PricingEnvironment:
             rewards = np.append(rewards, rew)
         return rewards
 
+    def day_round(self, pulled_arm):
+        return np.sum(self.round(pulled_arm))
+
     def get_opt(self):
         return np.max(self.expected_rewards)
 
