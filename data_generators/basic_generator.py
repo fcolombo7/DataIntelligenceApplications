@@ -68,9 +68,8 @@ class BasicDataGenerator(DataGenerator):
         if mode != 'all' and mode != 'aggregate':
             raise TypeError("`mode` kwarg error: the only valid choices are `all`(default) and `aggregate`")
         if mode == 'all':
-            return self._conversion_rates
-        # TODO: truncate/round the values?
-        return list(np.average(self._conversion_rates, axis=0, weights=self._class_distribution))
+            return np.around(self._conversion_rates, decimals=3)
+        return np.around(np.average(self._conversion_rates, axis=0, weights=self._class_distribution), decimals=3)
 
     def get_future_purchases(self, mode='all'):
         """
@@ -87,10 +86,10 @@ class BasicDataGenerator(DataGenerator):
             purchases = list(np.maximum(cl['lower_bound'],
                                         cl['coefficient']*(-np.array(self._prices) + self._prices[0]) + cl['upper_bound']))
             future_purchases.append(purchases)
+        # TODO: CHECK HERE! devo mettere decimals = 0 poichè int? Forse no perchè questa è solo la media.
         if mode == 'all':
-            return future_purchases
-        # TODO: truncate/round the values?
-        return list(np.average(future_purchases, axis=0, weights=self._class_distribution))
+            return np.around(future_purchases, decimals=3)
+        return np.around(np.average(future_purchases, axis=0, weights=self._class_distribution), decimals=3)
 
     def get_daily_clicks(self, mode='all'):
         """
@@ -106,10 +105,10 @@ class BasicDataGenerator(DataGenerator):
         for cl in self._daily_clicks:
             clicks_per_bid = list(cl['upper_bound'] * (1.0 - np.exp(-1 * cl['speed_factor'] * np.array(self._bids))))
             daily_clicks.append(clicks_per_bid)
+        # TODO: CHECK HERE! devo mettere decimals = 0 poichè int? Forse no perchè questa è solo la media.
         if mode == 'all':
-            return daily_clicks
-        # TODO: truncate/round the values?
-        return list(np.average(daily_clicks, axis=0, weights=self._class_distribution))
+            return np.around(daily_clicks, decimals=3)
+        return np.around(np.average(daily_clicks, axis=0, weights=self._class_distribution), decimals=3)
 
     def get_costs_per_click(self, mode='all'):
         """
@@ -125,9 +124,8 @@ class BasicDataGenerator(DataGenerator):
             costs_per_bid = list(cl['coefficient'] * np.log(1 + np.array(self._bids)/cl['coefficient']))
             costs.append(costs_per_bid)
         if mode == 'all':
-            return costs
-        # TODO: truncate/round the values?
-        return list(np.average(costs, axis=0, weights=self._class_distribution))
+            return np.around(costs, decimals=3)
+        return np.around(np.average(costs, axis=0, weights=self._class_distribution), decimals=3)
 
 
 # DEBUG
