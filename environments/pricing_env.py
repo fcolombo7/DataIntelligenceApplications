@@ -28,5 +28,5 @@ class PricingEnvironment:
     def __compute_expected_rewards(self):
         self.expected_rewards = np.array([])
         for arm in range(0, self.n_arms):
-            exp = self.conversion_rates[arm] * self.margins[arm] * (1 + self.tau[arm])
+            exp = self.conversion_rates[arm] * self.margins[arm] * (1 + self.tau[arm]) - self.cpc
             self.expected_rewards = np.append(self.expected_rewards, exp)
