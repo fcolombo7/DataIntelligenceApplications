@@ -2,7 +2,7 @@ from learners.Learner import Learner
 import numpy as np
 
 
-class ThompsonSampling(Learner):
+class BernoulliTS(Learner):
     
     def __init__(self, n_arms):
         super().__init__(n_arms)
