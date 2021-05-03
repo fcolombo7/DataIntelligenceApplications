@@ -20,8 +20,19 @@ class GPTS_Learner(Learner):
         self.pulled_arms.append(self.arms[arm_idx])
         
     def update_model(self):
-        x = np_atleastr_2d(self.pulled_arms).T
-        y = self.collected_rewards
+        x = np.atleast_2d(self.pulled_arms).T
+        y = self.collected_rewards#.reshape(-1,1)
+        
+        '''if(np.isnan(x).any()):
+            raise ValueError("x contains NaN") 
+        if(np.isnan(y).any()):
+            raise ValueError("y contains NaN")
+
+        if(np.isinf(x).any()):
+            raise ValueError("x contains inf")
+        if(np.isinf(y).any()):
+            raise ValueError("y contains inf")'''
+            
         self.gp.fit(x,y)
         self.means, self.sigmas = self.gp.predict(np.atleast_2d(self.arms).T, return_std = True)
         self.sigmas = np.maximum(self.sigmas, 1e-2)
@@ -29,7 +40,7 @@ class GPTS_Learner(Learner):
     def update(self, pulled_arm, reward):
         self.t += 1
         self.update_observations(pulled_arm, reward)
-        self.update_model
+        self.update_model()
         
     def pull_arm(self):
         sampled_values = np.random.normal(self.means, self.sigmas)

@@ -9,7 +9,7 @@ class BiddingEnvironment():
     def __init__(self, bids, sigma):
         data_gen = BasicDataGenerator("src/basic002.json")
         self.bids = bids
-        self.means = data_gen.get_daily_clicks(mode = 'aggregate')
+        self.means = fun(bids) #data_gen.get_daily_clicks(mode = 'aggregate')
         self.sigmas = np.ones(len(bids))*sigma
         
     def round(self, pulled_arm):
