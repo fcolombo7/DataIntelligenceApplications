@@ -1,4 +1,3 @@
-import numpy
 import numpy as np
 
 
@@ -25,5 +24,5 @@ class PricingEnvironment:
             if daily_rew is None:
                 daily_rew = self.round(pulled_arm)
             else:
-                daily_rew = numpy.vstack((daily_rew, self.round(pulled_arm)))
+                daily_rew = np.vstack((daily_rew, self.round(pulled_arm)))
         return daily_rew
