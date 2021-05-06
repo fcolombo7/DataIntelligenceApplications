@@ -1,8 +1,3 @@
-import json
-import os
-import shutil
-from zipfile import ZipFile
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -111,52 +106,9 @@ class Task3(Task):
         self.metadata['NUMBER_OF_EXPERIMENTS'] = self.n_experiments
 
     def load(self, filename):
-        with ZipFile(filename, 'r') as archive:
-            with archive.open('metadata.json') as f:
-                self.metadata = json.load(f)
-                print(self.metadata)
-            with archive.open('content.json') as f:
-                self.result = json.load(f)
-                print(self.result)
-        self.ready = True
+        super(Task3, self).load(filename)
         self.T = self.metadata['TIME_HORIZON']
         self.n_experiments = self.metadata['NUMBER_OF_EXPERIMENTS']
-
-    def save(self, folder='simulations_results', override=False):
-        assert os.path.isdir(folder) and self.ready
-        cur_dir = os.getcwd()
-        os.chdir(folder)
-        temp_dir_path = f'temp_{self.name}'
-        os.mkdir(temp_dir_path)
-        metadata = json.dumps(self.metadata)
-        print(metadata)
-        content = json.dumps(self.result)
-        print(content)
-        with open(os.path.join(temp_dir_path, 'metadata.json'), 'w') as f:
-            f.write(metadata)
-        with open(os.path.join(temp_dir_path, 'content.json'), 'w') as f:
-            f.write(content)
-        # Create a ZipFile Object
-        filename = f'result_{self.name}'
-        if not override:
-            count = 0
-            while os.path.isfile(f'{filename}.zip'):
-                count += 1
-                if count == 1:
-                    filename += '_'
-                else:
-                    filename = filename[:-1]
-                filename += str(count)
-
-        with ZipFile(f'{filename}.zip', 'w') as zipObj:
-            # Add multiple files to the zip
-            os.chdir(temp_dir_path)
-            zipObj.write('metadata.json')
-            zipObj.write('content.json')
-            os.chdir(folder)
-        # delete the temp dir
-        shutil.rmtree(temp_dir_path)
-        os.chdir(cur_dir)
 
     def plot(self, plot_number=0, figsize=(10, 8)):
         assert self.ready
@@ -191,8 +143,9 @@ class Task3(Task):
 # DEBUG
 if __name__ == '__main__':
     task = Task3(BasicDataGenerator('../../src/basic001.json'))
-    # task.config(10, 5)
-    # task.run()
-    # task.save('../../simulations_results')
-    task.load('../../simulations_results/result_Step#3_1.zip')
+    task.load('../../simulations_results/result_Step#3.zip')
+    task.config(365, 50)
+    task.run()
+    task.save('../../simulations_results')
+    task.plot(plot_number=0)
     task.plot(plot_number=1)
