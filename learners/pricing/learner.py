@@ -1,7 +1,8 @@
 import numpy as np
+from abc import ABC, abstractmethod
 
 
-class Learner:
+class Learner(ABC):
     """
     Abstract class used to represent online learning algorithms.
     """
@@ -64,6 +65,7 @@ class Learner:
                 (self.next_purchases_estimation[pulled_arm] * n_observations * self.period + next_purchases) / \
                 (self.period * (n_observations + 1))
 
+    @abstractmethod
     def pull_arm(self) -> int:
         """
 
@@ -71,6 +73,7 @@ class Learner:
         """
         pass
 
+    @abstractmethod
     def update(self, pulled_arm, outcome, next_purchases, cost):
         """
 
