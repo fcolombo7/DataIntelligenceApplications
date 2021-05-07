@@ -1,9 +1,6 @@
 import numpy as np
 from data_generators.basic_generator import *
 
-def fun(x):
-    return 100*(1.0 - np.exp(-4*x + 3*x**3))
-
 class BiddingEnvironment():
     
     def __init__(self, bids, sigma, n_clicks, cpc, conversion_rates, margins, tau, price_idx):
@@ -26,7 +23,7 @@ class BiddingEnvironment():
             
     def round(self, pulled_arm):
         sample_n_clicks = np.random.normal(self.n_clicks[pulled_arm], self.sigmas[pulled_arm])
-        sample_cpc = np.random.normal(self.cpc[pulled_arm], self.sigmas[pulled_arm])
+        sample_cpc = np.random.normal(self.cpc[pulled_arm], self.sigmas[pulled_arm]/10)
            
 
         reward = sample_n_clicks * (self.conv_rates[self.price_idx] * self.margins[self.price_idx] * \
