@@ -1,3 +1,6 @@
+import time
+from multiprocessing import Process, Lock, cpu_count
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -32,46 +35,28 @@ class Task3(Task):
         self.n_clicks = data_generator.get_daily_clicks(mode='aggregate')
         self.future_purchases = data_generator.get_future_purchases(mode='aggregate')
         self.selected_bid = 3
+        self.fixed_cost = self.costs_per_click[self.selected_bid]
+        self.fixed_n_clicks = np.rint(self.n_clicks[self.selected_bid]).astype(int)
         # control variables
         self.opt_arm = np.argmax(self.margins * self.conversion_rates * (1 + self.future_purchases) -
                                  self.costs_per_click[self.selected_bid])
-        self.T = None
-        self.n_experiments = None
-        self.learners_to_test = [UCB, ThompsonSampling]
-        # result
-        self.result = {}
 
-    def run(self, force=False):
-        if not force and self.ready:
-            self._print('Warning: The task was already executed, so the result is available.')
-            return
-        if force and self.ready:
-            self._print('Warning: Forcing the execution of the task, even if the result is available.')
-        self._print(f'The execution of the task `{self.name}` is started.')
-        # initialization of auxiliary variablesRunning
-        fixed_cost = self.costs_per_click[self.selected_bid]
-        fixed_n_clicks = np.rint(self.n_clicks[self.selected_bid]).astype(int)
+    def _serial_run(self, process_number: int, n_experiments: int, collector, lock: Lock):
         rewards_per_experiment = {}
         for learner in self.learners_to_test:
             rewards_per_experiment[learner.LEARNER_NAME] = []
 
-        self._print(f'N_ROUNDS: {self.T}')
-        self._print(f'N_EXPERIMENTS: {self.n_experiments}')
-        self._print(f'ALGORITHMS: {list(rewards_per_experiment.keys())}')
-        self._print(f'\nSelected bid: {self.bids[self.selected_bid]}({self.selected_bid})')
-        self._print(f'Fixed CPC: {fixed_cost}')
-        self._print(f'Fixed num_clicks: {self.n_clicks[self.selected_bid]} -> {fixed_n_clicks}')
-        for e in range(self.n_experiments):
+        for e in range(n_experiments):
             # Initialization of the learners to test and their related environment:
             # the list is composed of tuples (Learner, Environment)
-            self._print(f'running exp#{e}...')
+            self._print(f'core_{process_number}: running experiment {e+1}/{n_experiments}...')
             test_instances = []
             for learner in self.learners_to_test:
                 test_instances.append((learner(arm_values=self.margins),
                                        PricingEnvironment(n_arms=len(self.prices),
                                                           conversion_rates=self.conversion_rates,
-                                                          cost_per_click=fixed_cost,
-                                                          n_clicks=fixed_n_clicks,
+                                                          cost_per_click=self.fixed_cost,
+                                                          n_clicks=self.fixed_n_clicks,
                                                           tau=self.future_purchases)))
             for t in range(self.T):
                 for learner, env in test_instances:
@@ -81,29 +66,51 @@ class Task3(Task):
 
             for learner, _ in test_instances:
                 rewards_per_experiment[learner.LEARNER_NAME].append(learner.daily_collected_rewards)
+        # end
+        collector[process_number] = rewards_per_experiment
 
+    def _finalize_run(self, collected_values):
         # set the result attribute
+        aggregate_dict = {}
         for learner in self.learners_to_test:
-            self.result[learner.LEARNER_NAME] = np.mean(rewards_per_experiment[learner.LEARNER_NAME], axis=0).tolist()
+            aggregate_dict[learner.LEARNER_NAME] = []
+        for single_dict in collected_values:
+            for key in single_dict:
+                for value in single_dict[key]:
+                    aggregate_dict[key].append(value)
 
-        self._finalize_execution()
+        for learner in self.learners_to_test:
+            self.result[learner.LEARNER_NAME] = np.mean(aggregate_dict[learner.LEARNER_NAME], axis=0).tolist()
 
     def config(self,
                time_horizon,
                n_experiments,
+               learner_to_test=None,
                verbose=1):
         """
 
         :param time_horizon:
         :param n_experiments:
+        :param learner_to_test:
         :param verbose:
         :return:
         """
+        if learner_to_test is None:
+            learner_to_test = [UCB, ThompsonSampling]
         self.T = time_horizon
         self.n_experiments = n_experiments
+        self.learners_to_test = learner_to_test
         self.verbose = verbose
         self.metadata['TIME_HORIZON'] = self.T
         self.metadata['NUMBER_OF_EXPERIMENTS'] = self.n_experiments
+
+        self._print(f"{'*'*20} ACTUAL CONFIGURATION {'*'*20}")
+        self._print(f'N_ROUNDS: {self.T}')
+        self._print(f'N_EXPERIMENTS: {self.n_experiments}')
+        self._print(f'ALGORITHMS: {[l.LEARNER_NAME for l in self.learners_to_test]}')
+        self._print(f'\nSelected bid: {self.bids[self.selected_bid]}({self.selected_bid})')
+        self._print(f'Fixed CPC: {self.fixed_cost}')
+        self._print(f'Fixed num_clicks: {self.n_clicks[self.selected_bid]} -> {self.fixed_n_clicks}\n')
 
     def load(self, filename):
         super(Task3, self).load(filename)
@@ -142,10 +149,22 @@ class Task3(Task):
 
 # DEBUG
 if __name__ == '__main__':
+    print('PARALLEL EXECUTION')
+    start_time = time.perf_counter_ns()
     task = Task3(BasicDataGenerator('../../src/basic001.json'))
-    task.load('../../simulations_results/result_Step#3.zip')
-    task.config(365, 50)
-    task.run()
+    # task.load('../../simulations_results/result_Step#3.zip')
+    task.config(time_horizon=365, n_experiments=10, verbose=0)
+    task.run(parallelize=True)
     task.save('../../simulations_results')
-    task.plot(plot_number=0)
-    task.plot(plot_number=1)
+    end_time = time.perf_counter_ns()
+    print(f"Execution time: {end_time - start_time} ns\n")
+    print('SERIAL EXECUTION')
+    start_time = time.perf_counter_ns()
+    task = Task3(BasicDataGenerator('../../src/basic001.json'))
+    # task.load('../../simulations_results/result_Step#3.zip')
+    task.config(time_horizon=365, n_experiments=10, verbose=0)
+    task.run(parallelize=False)
+    task.save('../../simulations_results')
+    end_time = time.perf_counter_ns()
+    print(f"Execution time: {end_time - start_time} ns")
+

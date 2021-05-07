@@ -1,8 +1,10 @@
 import datetime
+import numpy as np
 import json
 import os
 import shutil
 from abc import ABC, abstractmethod
+from multiprocessing import Process, Lock, cpu_count, Manager
 from zipfile import ZipFile
 
 
@@ -27,15 +29,59 @@ class Task(ABC):
             'DESCRIPTION': self.description,
             'EXECUTION_DATE': 'never'
         }
+        self.T = None
+        self.n_experiments = None
+        self.learners_to_test = None
         self.result = {}
 
     @abstractmethod
-    def run(self, force):
+    def _serial_run(self, process_number: int, n_experiments: int, collector, lock: Lock):
         pass
 
     @abstractmethod
     def config(self, *args):
         pass
+
+    @abstractmethod
+    def _finalize_run(self, collected_values):
+        pass
+
+    @abstractmethod
+    def plot(self, plot_number):
+        pass
+
+    def run(self, force=False, parallelize=True, cores_number=-1):
+        # check if the config method has been called
+        assert self.T is not None and self.learners_to_test is not None and self.n_experiments is not None
+
+        if not force and self.ready:
+            self._print('Warning: The task was already executed, so the result is available.')
+            return
+        if force and self.ready:
+            self._print('Warning: Forcing the execution of the task, even if the result is available.')
+        self._print(f'The execution of the task `{self.name}` is started.')
+
+        manager = Manager()
+        collector = manager.dict()
+
+        if not parallelize:
+            cores_number = 1
+        else:
+            if cores_number == -1:
+                cores_number = cpu_count()
+            else:
+                cores_number = max(cpu_count(), cores_number)
+
+        lock = Lock()
+        num_exp_per_process = round(self.n_experiments / cores_number)
+        processes = [Process(target=self._serial_run, args=(n, num_exp_per_process, collector, lock)) for n
+                     in range(0, cores_number)]
+        for p in processes:
+            p.start()
+        for p in processes:
+            p.join()
+        self._finalize_run(collector.values())
+        self._finalize_execution()
 
     def load(self, filename):
         with ZipFile(filename, 'r') as archive:
@@ -54,9 +100,7 @@ class Task(ABC):
         temp_dir_path = f'temp_{self.name}'
         os.mkdir(temp_dir_path)
         metadata = json.dumps(self.metadata)
-        print(metadata)
         content = json.dumps(self.result)
-        print(content)
         with open(os.path.join(temp_dir_path, 'metadata.json'), 'w') as f:
             f.write(metadata)
         with open(os.path.join(temp_dir_path, 'content.json'), 'w') as f:
@@ -82,10 +126,6 @@ class Task(ABC):
         # delete the temp dir
         shutil.rmtree(temp_dir_path)
         os.chdir(cur_dir)
-
-    @abstractmethod
-    def plot(self, plot_number):
-        pass
 
     def _print(self, text: str):
         if self.verbose != 0:
