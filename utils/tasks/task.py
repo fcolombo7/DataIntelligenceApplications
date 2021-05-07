@@ -122,7 +122,7 @@ class Task(ABC):
             os.chdir(temp_dir_path)
             zipObj.write('metadata.json')
             zipObj.write('content.json')
-            os.chdir(folder)
+            os.chdir('../')
         # delete the temp dir
         shutil.rmtree(temp_dir_path)
         os.chdir(cur_dir)

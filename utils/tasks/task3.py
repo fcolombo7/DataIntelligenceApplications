@@ -147,7 +147,8 @@ class Task3(Task):
             plt.show()
 
 
-# DEBUG
+# DEBUG - Not sure it works anymore due to changes
+"""
 if __name__ == '__main__':
     print('PARALLEL EXECUTION')
     start_time = time.perf_counter_ns()
@@ -167,4 +168,4 @@ if __name__ == '__main__':
     task.save('../../simulations_results')
     end_time = time.perf_counter_ns()
     print(f"Execution time: {end_time - start_time} ns")
-
+"""
