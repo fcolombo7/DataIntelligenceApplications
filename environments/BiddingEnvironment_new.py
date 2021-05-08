@@ -8,7 +8,6 @@ class BiddingEnvironment(Environment):
         self.n_arms = len(bids)
         self.price_idx = price_idx
         self.sigmas = np.ones(len(bids))*sigma
-        self.eligibility = np.zeros(len(bids))
 
         self.__compute_expected_rewards()
 

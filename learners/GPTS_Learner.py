@@ -12,7 +12,7 @@ class GPTS_Learner(Learner):
         self.arms = arms
         self.means = np.zeros(self.n_arms)
         self.sigmas = np.ones(self.n_arms)*10
-        self.eligibility = np.zeros(self.n_arms)
+        self.ineligibility = np.zeros(self.n_arms)
         self.negative_threshold = 0.2
         self.penalty = 0.8
         self.pulled_arms = []
@@ -22,22 +22,12 @@ class GPTS_Learner(Learner):
         
     def update_observations(self, arm_idx, reward):
         super().update_observations(arm_idx, reward)
-        self.eligibility[arm_idx] = norm.cdf(0, self.means[arm_idx], self.sigmas[arm_idx])
+        self.ineligibility[arm_idx] = norm.cdf(0, self.means[arm_idx], self.sigmas[arm_idx])
         self.pulled_arms.append(self.arms[arm_idx])
         
     def update_model(self):
         x = np.atleast_2d(self.pulled_arms).T
-        y = self.collected_rewards#.reshape(-1,1)
-        
-        '''if(np.isnan(x).any()):
-            raise ValueError("x contains NaN") 
-        if(np.isnan(y).any()):
-            raise ValueError("y contains NaN")
-
-        if(np.isinf(x).any()):
-            raise ValueError("x contains inf")
-        if(np.isinf(y).any()):
-            raise ValueError("y contains inf")'''
+        y = self.collected_rewards
             
         self.gp.fit(x, y)
         self.means, self.sigmas = self.gp.predict(np.atleast_2d(self.arms).T, return_std = True)
@@ -51,7 +41,8 @@ class GPTS_Learner(Learner):
     def pull_arm(self):
         if self.t < 10:
             return np.random.choice(self.n_arms)
-        penalized_arms = np.nonzero(self.eligibility > self.negative_threshold)
-        penalized_means = self.means[penalized_arms] * self.penalty
+        penalized_means = self.means
+        penalized_means[self.ineligibility > self.negative_threshold] = \
+            penalized_means[self.ineligibility > self.negative_threshold] * self.penalty
         sampled_values = np.random.normal(penalized_means, self.sigmas)
         return np.argmax(sampled_values)
