@@ -33,7 +33,7 @@ class GPTS_Learner(Learner):
         if(np.isinf(y).any()):
             raise ValueError("y contains inf")'''
             
-        self.gp.fit(x,y)
+        self.gp.fit(x, y)
         self.means, self.sigmas = self.gp.predict(np.atleast_2d(self.arms).T, return_std = True)
         self.sigmas = np.maximum(self.sigmas, 1e-2)
         
@@ -45,4 +45,3 @@ class GPTS_Learner(Learner):
     def pull_arm(self):
         sampled_values = np.random.normal(self.means, self.sigmas)
         return np.argmax(sampled_values)
-        
