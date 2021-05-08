@@ -52,7 +52,7 @@ class Task3(Task):
                                                           tau=self.future_purchases)))
             for t in range(self.T):
                 for learner, env in test_instances:
-                    prev_arm, prev_future_purchases = env.future_purchases(t)
+                    prev_arm, prev_future_purchases = env.get_future_purchases(t)
                     if prev_arm is not None:
                         learner.update_future_purchases(prev_arm, prev_future_purchases)
                     pulled_arm = learner.pull_arm()

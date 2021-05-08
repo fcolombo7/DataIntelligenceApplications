@@ -34,7 +34,7 @@ class PricingEnvironment:
         self.t += 1
         return daily_rew
 
-    def future_purchases(self, day):
+    def get_future_purchases(self, day):
         if day < 30:
             return None, []
-        return self.selected_arms[day-30], self.future_purchases[day-30]
+        return self.selected_arms[day - 30], self.future_purchases[day - 30]

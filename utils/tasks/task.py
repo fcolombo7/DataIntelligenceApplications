@@ -101,9 +101,8 @@ class Task(ABC):
             else:
                 cores_number = max(cpu_count(), cores_number)
 
-        lock = Lock()
         num_exp_per_process = round(self.n_experiments / cores_number)
-        processes = [Process(target=self._serial_run, args=(n, num_exp_per_process, collector, lock)) for n
+        processes = [Process(target=self._serial_run, args=(n, num_exp_per_process, collector)) for n
                      in range(0, cores_number)]
         for p in processes:
             p.start()
