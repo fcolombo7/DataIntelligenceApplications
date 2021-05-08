@@ -85,7 +85,7 @@ class Learner(ABC):
         :param daily_rew:
         :return:
         """
-        r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]) - daily_rew[:, 1]
+        r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]*self.period) - daily_rew[:, 1]
         self.daily_collected_rewards = np.append(self.daily_collected_rewards, np.sum(r))
         for outcome, cost in daily_rew:
             self.update(pulled_arm, outcome, cost)
