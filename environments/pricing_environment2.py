@@ -9,20 +9,32 @@ class PricingEnvironment:
         self.n_clicks = n_clicks
         # TODO: TAU È UN VETTORE DI VALORI ATTESI DI BINOMIAL
         self.tau = tau
+        self.future_purchases = {}
+        self.selected_arms = {}
+        self.t = 0
 
     def round(self, pulled_arm):
         outcome = np.random.binomial(1, self.conversion_rates[pulled_arm])
-        future_purchases = 0
+        single_future_purchases = 0
         if outcome != 0:
             p = self.tau[pulled_arm]/30
-            future_purchases = np.random.binomial(30, p)
-        return [outcome, future_purchases, self.cpc]
+            single_future_purchases = np.random.binomial(30, p)
+            self.future_purchases[self.t].append(single_future_purchases)
+        return [outcome, self.cpc]
 
     def day_round(self, pulled_arm):
+        self.future_purchases[self.t] = []
+        self.selected_arms[self.t] = pulled_arm
         daily_rew = None
         for _ in range(self.n_clicks):
             if daily_rew is None:
                 daily_rew = self.round(pulled_arm)
             else:
                 daily_rew = np.vstack((daily_rew, self.round(pulled_arm)))
+        self.t += 1
         return daily_rew
+
+    def future_purchases(self, day):
+        if day < 30:
+            return None, []
+        return self.selected_arms[day-30], self.future_purchases[day-30]

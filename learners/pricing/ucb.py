@@ -19,7 +19,7 @@ class UCB(Learner):
         best_arms = np.argwhere(conditions == conditions.max()).reshape(-1)
         return np.random.choice(best_arms)
 
-    def update(self, pulled_arm, outcome, next_purchases, cost):
+    def update(self, pulled_arm, outcome, cost):
         self.t += 1
         # compute the mean in an incremental way
         n_samples = len(self.outcome_per_arm[pulled_arm])
@@ -29,4 +29,4 @@ class UCB(Learner):
             n_samples = len(self.outcome_per_arm[arm])
             self.confidences[arm] = (2 * np.log(self.t) / n_samples) ** 0.5 if n_samples > 0 else np.inf
         # at the denominator of the confidences there is N_a @ t-1, so append after the computation of the confidence.
-        self.update_observations(pulled_arm, outcome, next_purchases, cost)
+        self.update_observations(pulled_arm, outcome, cost)

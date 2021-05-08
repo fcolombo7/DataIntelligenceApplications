@@ -15,11 +15,11 @@ class ThompsonSampling(Learner):
         ids = np.argmax(np.random.beta(self.beta_parameters[:, 0], self.beta_parameters[:, 1]) * factor).reshape(-1)
         return np.random.choice(ids)
 
-    def update(self, pulled_arm, outcome, next_purchases, cost):
+    def update(self, pulled_arm, outcome, cost):
         self.t += 1
         self.beta_parameters[pulled_arm, 0] = self.beta_parameters[pulled_arm, 0] + outcome
         self.beta_parameters[pulled_arm, 1] = self.beta_parameters[pulled_arm, 1] + 1.0 - outcome
-        self.update_observations(pulled_arm, outcome, next_purchases, cost)
+        self.update_observations(pulled_arm, outcome, cost)
 
 
 

@@ -32,23 +32,17 @@ class Learner(ABC):
         self.next_purchases_observations = [[] for _ in range(self.n_arms)]
         self.next_purchases_update = next_purchases_update
 
-    def update_observations(self, pulled_arm, outcome, next_purchases, cost):
+    def update_observations(self, pulled_arm, outcome, cost):
         """
 
         :param pulled_arm:
         :param outcome:
-        :param next_purchases:
         :param cost:
         :return: void
         """
         self.outcome_per_arm[pulled_arm].append(outcome)
-        actual_reward = outcome * self.arm_values[pulled_arm] * (1 + next_purchases) - cost
+        actual_reward = outcome * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]) - cost
         self.collected_rewards = np.append(self.collected_rewards, actual_reward)
-        if self.next_purchases_update == 'binomial':
-            self.__binomial_update(pulled_arm, next_purchases)
-        else:
-            raise NotImplementedError()
-        self.next_purchases_observations[pulled_arm].append(next_purchases)
 
     def __binomial_update(self, pulled_arm, next_purchases):
         """
@@ -74,12 +68,11 @@ class Learner(ABC):
         pass
 
     @abstractmethod
-    def update(self, pulled_arm, outcome, next_purchases, cost):
+    def update(self, pulled_arm, outcome, cost):
         """
 
         :param pulled_arm:
         :param outcome:
-        :param next_purchases:
         :param cost:
         :return:
         """
@@ -94,5 +87,15 @@ class Learner(ABC):
         """
         r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + daily_rew[:, 1]) - daily_rew[:, 2]
         self.daily_collected_rewards = np.append(self.daily_collected_rewards, np.sum(r))
-        for outcome, next_purchases, cost in daily_rew:
-            self.update(pulled_arm, outcome, next_purchases, cost)
+        for outcome, cost in daily_rew:
+            self.update(pulled_arm, outcome, cost)
+
+    def update_future_purchases(self, pulled_arm, daily_future_obs):
+        if self.next_purchases_update == 'binomial':
+            for ob in daily_future_obs:
+                self.__binomial_update(pulled_arm, ob)
+                self.next_purchases_observations[pulled_arm].append(ob)
+        else:
+            raise NotImplementedError()
+
+
