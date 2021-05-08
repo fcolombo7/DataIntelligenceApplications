@@ -2,6 +2,8 @@ from learners.Learner import *
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
+from scipy.stats import norm
+
 
 class GPTS_Learner(Learner):
     
@@ -10,6 +12,9 @@ class GPTS_Learner(Learner):
         self.arms = arms
         self.means = np.zeros(self.n_arms)
         self.sigmas = np.ones(self.n_arms)*10
+        self.eligibility = np.zeros(self.n_arms)
+        self.negative_threshold = 0.2
+        self.penalty = 0.8
         self.pulled_arms = []
         alpha = 10.0
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))
@@ -17,6 +22,7 @@ class GPTS_Learner(Learner):
         
     def update_observations(self, arm_idx, reward):
         super().update_observations(arm_idx, reward)
+        self.eligibility[arm_idx] = norm.cdf(0, self.means[arm_idx], self.sigmas[arm_idx])
         self.pulled_arms.append(self.arms[arm_idx])
         
     def update_model(self):
@@ -43,5 +49,9 @@ class GPTS_Learner(Learner):
         self.update_model()
         
     def pull_arm(self):
-        sampled_values = np.random.normal(self.means, self.sigmas)
+        if self.t < 10:
+            return np.random.choice(self.n_arms)
+        penalized_arms = np.nonzero(self.eligibility > self.negative_threshold)
+        penalized_means = self.means[penalized_arms] * self.penalty
+        sampled_values = np.random.normal(penalized_means, self.sigmas)
         return np.argmax(sampled_values)
