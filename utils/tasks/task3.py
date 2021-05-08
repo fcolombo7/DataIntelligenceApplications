@@ -14,16 +14,11 @@ from data_generators.data_generator import DataGenerator
 
 class Task3(Task):
     """
-
+    Task representing the step 3: the bid is fixed and it is learnt in an online fashion the best pricing strategy
+    when the algorithm does not discriminate among the customers’ classes.
     """
 
     def __init__(self, data_generator: DataGenerator, name="Step#3", description=""):
-        """
-
-        :param data_generator:
-        :param name:
-        :param description:
-        """
         super().__init__(name, description)
         self.data_generator = data_generator
         # input data
@@ -41,7 +36,7 @@ class Task3(Task):
         self.opt_arm = np.argmax(self.margins * self.conversion_rates * (1 + self.future_purchases) -
                                  self.costs_per_click[self.selected_bid])
 
-    def _serial_run(self, process_number: int, n_experiments: int, collector, lock: Lock):
+    def _serial_run(self, process_number: int, n_experiments: int, collector):
         rewards_per_experiment = {}
         for learner in self.learners_to_test:
             rewards_per_experiment[learner.LEARNER_NAME] = []
@@ -66,7 +61,7 @@ class Task3(Task):
 
             for learner, _ in test_instances:
                 rewards_per_experiment[learner.LEARNER_NAME].append(learner.daily_collected_rewards)
-        # end
+        # end -> save rhe results.
         collector[process_number] = rewards_per_experiment
 
     def _finalize_run(self, collected_values):
@@ -87,14 +82,6 @@ class Task3(Task):
                n_experiments,
                learner_to_test=None,
                verbose=1):
-        """
-
-        :param time_horizon:
-        :param n_experiments:
-        :param learner_to_test:
-        :param verbose:
-        :return:
-        """
         if learner_to_test is None:
             learner_to_test = [UCB, ThompsonSampling]
         self.T = time_horizon

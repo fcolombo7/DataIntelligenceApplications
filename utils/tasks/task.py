@@ -14,7 +14,7 @@ class Task(ABC):
     """
     def __init__(self, name, description):
         """
-
+        Class constructor
         :param name: the name of the task
         :type name: str
         :param description: the description of the task
@@ -35,23 +35,52 @@ class Task(ABC):
         self.result = {}
 
     @abstractmethod
-    def _serial_run(self, process_number: int, n_experiments: int, collector, lock: Lock):
+    def _serial_run(self, process_id: int, n_experiments: int, collector):
+        """
+        Single core execution of the simulation.
+        :param process_id: identifier of the process.
+        :param n_experiments: number of experiments tried by the single core.
+        :param collector: dictionary used as shared state between cores.
+        Each core should save values in collector[process_id].
+        """
         pass
 
     @abstractmethod
     def config(self, *args):
+        """
+        Method used to configure the hyper paramenter of the simulation
+        :param args: hyperparameter of the simulation
+        :return:
+        """
         pass
 
     @abstractmethod
     def _finalize_run(self, collected_values):
+        """
+        Method used to aggregate all the result computed by each core, and set the final result [`result`: dict]
+        :param collected_values: values computed by each core
+        """
         pass
 
     @abstractmethod
-    def plot(self, plot_number):
+    def plot(self, plot_number, figsize):
+        """
+        Plot the result of the simulation.
+        :param plot_number: Which plot to show.
+        :param figsize: dimension of the figure.
+        """
         pass
 
     def run(self, force=False, parallelize=True, cores_number=-1):
-        # check if the config method has been called
+        """
+        Method used to start the simulation of the Task.
+        :param force: if False (default) check if the task has been already executed/loaded. If so the execution is skipped.
+        if True, the execution is performed in any case.
+        :param parallelize: if True the simulation is run in parallel, otherwise serially.
+        :param cores_number: if parallelize = True, it represents the number of cores used by the simulator.
+        (default= -1 =>it uses all the available cores)
+        """
+        # check if the config method has been called TODO: check when other tasks are available.
         assert self.T is not None and self.learners_to_test is not None and self.n_experiments is not None
 
         if not force and self.ready:
@@ -84,6 +113,10 @@ class Task(ABC):
         self._finalize_execution()
 
     def load(self, filename):
+        """
+        Load the result computed by a previous simulation.
+        :param filename: path to the zip file containing the simulation to load.
+        """
         with ZipFile(filename, 'r') as archive:
             with archive.open('metadata.json') as f:
                 self.metadata = json.load(f)
@@ -93,7 +126,12 @@ class Task(ABC):
                 print(self.result)
         self.ready = True
 
-    def save(self, folder='simulations_results', override=False):
+    def save(self, folder='simulations_results', overwrite=False):
+        """
+        Save the result computed by the current simulation.
+        :param folder: output folder.
+        :param overwrite: if True overwrite the results already available (if present), otherwise it saves another file.
+        """
         assert os.path.isdir(folder) and self.ready
         cur_dir = os.getcwd()
         os.chdir(folder)
@@ -107,7 +145,7 @@ class Task(ABC):
             f.write(content)
         # Create a ZipFile Object
         filename = f'result_{self.name}'
-        if not override:
+        if not overwrite:
             count = 0
             while os.path.isfile(f'{filename}.zip'):
                 count += 1
@@ -128,9 +166,16 @@ class Task(ABC):
         os.chdir(cur_dir)
 
     def _print(self, text: str):
+        """
+        Custom print according to the class verbose.
+        :param text: String to be printed.
+        """
         if self.verbose != 0:
             print(text)
 
     def _finalize_execution(self):
+        """
+        Append information to the metadata structure and make the result available to be plotted.
+        """
         self.metadata['EXECUTION_DATE'] = str(datetime.datetime.now())
         self.ready = True
