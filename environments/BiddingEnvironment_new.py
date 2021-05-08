@@ -1,30 +1,22 @@
-import numpy as np
-from data_generators.basic_generator import *
+from environments.Environment import *
 
-class BiddingEnvironment():
+
+class BiddingEnvironment(Environment):
     
-    def __init__(self, bids, sigma, n_clicks, cpc, conversion_rates, margins, tau, price_idx):
-        data_gen = BasicDataGenerator("src/basic002.json")
-        
+    def __init__(self, bids, sigma, price_idx=0, mode='all', src='src/basic002.json'):
+        super().__init__(mode=mode, src=src)
         self.n_arms = len(bids)
-        self.bids = bids
-        self.n_clicks = n_clicks
-        self.cpc = cpc
-        self.conv_rates = conversion_rates
-        self.margins = margins
-        self.tau = tau
         self.price_idx = price_idx
         self.sigmas = np.ones(len(bids))*sigma
+        self.eligibility = np.zeros(len(bids))
 
         self.__compute_expected_rewards()
-        
-        
-         
-            
+
+        print(f"Environment created with fixed price: {self.prices[price_idx]}")
+
     def round(self, pulled_arm):
         sample_n_clicks = np.random.normal(self.n_clicks[pulled_arm], self.sigmas[pulled_arm])
         sample_cpc = np.random.normal(self.cpc[pulled_arm], self.sigmas[pulled_arm]/10)
-           
 
         reward = sample_n_clicks * (self.conv_rates[self.price_idx] * self.margins[self.price_idx] * \
                     (1 + self.tau[self.price_idx]) - sample_cpc)
