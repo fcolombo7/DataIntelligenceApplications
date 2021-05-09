@@ -15,7 +15,9 @@ class UCB(Learner):
         # now multiply the upper bound with the arm values! that is known
         upper_bounds = self.empirical_means + self.confidences
         # period * estimation = mean of the binomial
-        conditions = self.arm_values * (1 + self.period * self.next_purchases_estimation) * upper_bounds
+        # TODO: mean, not parameter of the binomial
+        #  conditions = self.arm_values * (1 + self.period * self.next_purchases_estimation) * upper_bounds
+        conditions = self.arm_values * (1 + self.next_purchases_estimation) * upper_bounds
         best_arms = np.argwhere(conditions == conditions.max()).reshape(-1)
         return np.random.choice(best_arms)
 

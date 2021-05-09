@@ -1,10 +1,9 @@
 import datetime
-import numpy as np
 import json
 import os
 import shutil
 from abc import ABC, abstractmethod
-from multiprocessing import Process, Lock, cpu_count, Manager
+from multiprocessing import Process, cpu_count, Manager
 from zipfile import ZipFile
 
 
@@ -12,17 +11,19 @@ class Task(ABC):
     """
     Abstract class used to represent the tasks run by the simulator
     """
-    def __init__(self, name, description):
+    def __init__(self, name, description, verbose):
         """
         Class constructor
         :param name: the name of the task
         :type name: str
         :param description: the description of the task
         :type description: str
+        :param verbose: level of verbose. (0 or 1)
+        :type: int
         """
         self.name = name
         self.description = description
-        self.verbose = 0
+        self.verbose = verbose
         self.ready = False
         self.metadata = {
             'NAME': self.name,
@@ -119,11 +120,12 @@ class Task(ABC):
         with ZipFile(filename, 'r') as archive:
             with archive.open('metadata.json') as f:
                 self.metadata = json.load(f)
-                print(self.metadata)
+                # print(self.metadata)
             with archive.open('content.json') as f:
                 self.result = json.load(f)
-                print(self.result)
+                # print(self.result)
         self.ready = True
+        self._print(f"Simulation's result loaded from `{filename}`.")
 
     def save(self, folder='simulations_results', overwrite=False):
         """
@@ -163,6 +165,7 @@ class Task(ABC):
         # delete the temp dir
         shutil.rmtree(temp_dir_path)
         os.chdir(cur_dir)
+        self._print(f"The simulation's result is stored in `{folder}/{filename}.zip`.")
 
     def _print(self, text: str):
         """

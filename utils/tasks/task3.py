@@ -1,8 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
-from data_generators.basic_generator import BasicDataGenerator
-from environments.pricing_environment2 import PricingEnvironment
+from environments.pricing_environment import PricingEnvironment
 from learners.pricing.thompson_sampling import ThompsonSampling
 from learners.pricing.ucb import UCB
 from utils.tasks.task import Task
@@ -15,8 +16,8 @@ class Task3(Task):
     when the algorithm does not discriminate among the customers’ classes.
     """
 
-    def __init__(self, data_generator: DataGenerator, name="Step#3", description=""):
-        super().__init__(name, description)
+    def __init__(self, data_generator: DataGenerator, name="Step#3", description="", verbose=1):
+        super().__init__(name, description, verbose)
         self.data_generator = data_generator
         # input data
         self.prices = data_generator.get_prices()
@@ -108,6 +109,9 @@ class Task3(Task):
         assert self.ready
         if plot_number < 0 or plot_number > 1:
             raise TypeError("`plot_number` kwarg error: only 2 plot are available.")
+
+        sns.set_theme(style="darkgrid")
+
         opt = (self.margins[self.opt_arm] * self.conversion_rates[self.opt_arm] *
                (1 + self.future_purchases[self.opt_arm]) - self.costs_per_click[self.selected_bid]) * \
               np.rint(self.n_clicks[self.selected_bid]).astype(int)
@@ -115,22 +119,22 @@ class Task3(Task):
         if plot_number == 0:
             plt.figure(0, figsize=figsize)
             plt.ylabel("Regret")
-            plt.xlabel("day")
+            plt.xlabel("Day")
             for val in self.result.values():
                 plt.plot(np.cumsum(opt - val))
             plt.legend(self.result.keys())
-            plt.title = "Cumulative regret"
+            plt.title("Cumulative regret")
             plt.show()
 
         elif plot_number == 1:
             plt.figure(1, figsize=figsize)
-            plt.xlabel("day")
+            plt.xlabel("Day")
             plt.ylabel("Daily reward")
-            plt.plot([opt] * self.T, '--', label='clairvoyant')
+            plt.plot([opt] * self.T, '--g', label='clairvoyant')
             for key in self.result:
                 plt.plot(self.result[key], label=key)
             plt.legend(loc='best')
-            plt.title = "Reward by day"
+            plt.title("Reward by day")
             plt.show()
 
 

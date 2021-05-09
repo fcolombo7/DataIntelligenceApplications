@@ -51,6 +51,8 @@ class Learner(ABC):
         :param next_purchases:
         :return:
         """
+        # TODO: I was estimating the parameter p of the binomial, while i need the mean only
+        """
         n_observations = len(self.next_purchases_observations[pulled_arm])
         if n_observations == 0:
             self.next_purchases_estimation[pulled_arm] = next_purchases / self.period
@@ -58,6 +60,13 @@ class Learner(ABC):
             self.next_purchases_estimation[pulled_arm] = \
                 (self.next_purchases_estimation[pulled_arm] * n_observations * self.period + next_purchases) / \
                 (self.period * (n_observations + 1))
+        """
+        n_observations = len(self.next_purchases_observations[pulled_arm])
+        if n_observations == 0:
+            self.next_purchases_estimation[pulled_arm] = next_purchases
+        else:
+            self.next_purchases_estimation[pulled_arm] = \
+                (self.next_purchases_estimation[pulled_arm] * n_observations + next_purchases) / (n_observations + 1)
 
     @abstractmethod
     def pull_arm(self) -> int:
@@ -85,7 +94,9 @@ class Learner(ABC):
         :param daily_rew:
         :return:
         """
-        r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]*self.period) - daily_rew[:, 1]
+        # TODO: mean, not the parameter of the binomial -->
+        #  r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]*self.period) - daily_rew[:, 1]
+        r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]) - daily_rew[:, 1]
         self.daily_collected_rewards = np.append(self.daily_collected_rewards, np.sum(r))
         for outcome, cost in daily_rew:
             self.update(pulled_arm, outcome, cost)

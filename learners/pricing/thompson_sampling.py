@@ -11,7 +11,9 @@ class ThompsonSampling(Learner):
         self.beta_parameters = np.ones((self.n_arms, 2))
 
     def pull_arm(self) -> int:
-        factor = self.arm_values * (1 + self.period * self.next_purchases_estimation)
+        # TODO: mean, not parameter of the binomial
+        #  factor = self.arm_values * (1 + self.period * self.next_purchases_estimation)
+        factor = self.arm_values * (1 + self.next_purchases_estimation)
         ids = np.argmax(np.random.beta(self.beta_parameters[:, 0], self.beta_parameters[:, 1]) * factor).reshape(-1)
         return np.random.choice(ids)
 
