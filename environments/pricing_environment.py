@@ -8,6 +8,7 @@ class PricingEnvironment:
         self.cpc = cost_per_click
         self.n_clicks = n_clicks
         self.tau = tau
+
         self.future_purchases = {}
         self.selected_arms = {}
         self.t = 0
