@@ -23,5 +23,7 @@ class ThompsonSampling(Learner):
         self.beta_parameters[pulled_arm, 1] = self.beta_parameters[pulled_arm, 1] + 1.0 - outcome
         self.update_observations(pulled_arm, outcome, cost)
 
-
-
+    def get_opt_arm_expected_value(self) -> (float, int):
+        mean_values = self.beta_parameters[:, 0] / (self.beta_parameters[:, 0] + self.beta_parameters[:, 1])
+        factor = self.arm_values * (1 + self.next_purchases_estimation)
+        return np.max(mean_values * factor), np.argmax(mean_values * factor)

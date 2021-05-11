@@ -32,3 +32,9 @@ class UCB(Learner):
             self.confidences[arm] = (2 * np.log(self.t) / n_samples) ** 0.5 if n_samples > 0 else np.inf
         # at the denominator of the confidences there is N_a @ t-1, so append after the computation of the confidence.
         self.update_observations(pulled_arm, outcome, cost)
+
+    def get_opt_arm_expected_value(self) -> (float, int):
+        best_arm = self.pull_arm()
+        factor = self.arm_values[best_arm] * (1 + self.next_purchases_estimation[best_arm])
+        mean = self.empirical_means[best_arm]
+        return factor * mean, best_arm

@@ -68,25 +68,6 @@ class Learner(ABC):
             self.next_purchases_estimation[pulled_arm] = \
                 (self.next_purchases_estimation[pulled_arm] * n_observations + next_purchases) / (n_observations + 1)
 
-    @abstractmethod
-    def pull_arm(self) -> int:
-        """
-
-        :return: void
-        """
-        pass
-
-    @abstractmethod
-    def update(self, pulled_arm, outcome, cost):
-        """
-
-        :param pulled_arm:
-        :param outcome:
-        :param cost:
-        :return:
-        """
-        pass
-
     def daily_update(self, pulled_arm, daily_rew):
         """
 
@@ -109,4 +90,19 @@ class Learner(ABC):
         else:
             raise NotImplementedError()
 
+    @abstractmethod
+    def pull_arm(self) -> int:
+        pass
 
+    @abstractmethod
+    def update(self, pulled_arm, outcome, cost):
+        """
+        :param pulled_arm:
+        :param outcome:
+        :param cost:
+        """
+        pass
+
+    @abstractmethod
+    def get_opt_arm_expected_value(self) -> (float, int):
+        pass
