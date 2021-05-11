@@ -18,6 +18,7 @@ class ContextualLearner:
         return self.base_learner_class(**self.base_learner_args)
 
     def get_learner_by_context(self, current_features):
+        # TODO: probably a faster way can be achieved by using the get_leaves method
         # navigation of the tree up to the leaf with the correct context
         cur_node = self.context_tree
         navigate = True
@@ -49,3 +50,30 @@ class ContextualLearner:
                     raise NotImplementedError("An error occurs: neither the left and the right child are compliant "
                                               "with the given features.")
         return cur_node.base_learner
+
+    def update_next_purchases(self, pulled_arms_data: list, next_purchases_data: list, features_data: list):
+        """
+        :param pulled_arms_data: list containing all the pulled arms
+        :param next_purchases_data: list containing the number of times a user returns in the next 30 days
+        :param features_data: list of tuples representing the realization of the feature space
+        """
+        leaves = self.context_tree.get_leaves()
+        dispatched_data = [[] for _ in leaves]
+        # scan the data received by the environment to populate the proper list according to the context
+        for i, obs in enumerate(next_purchases_data):
+            # i -> index used to scan the data received by the environment
+            for j, leaf in enumerate(leaves):
+                # j -> index used to keep track of the correct leaf
+                leaf_subspace = leaf.feature_subspace
+                good_leaf = True
+                for feature in leaf_subspace:
+                    feature_idx = self.features.index(feature)
+                    if features_data[i][feature_idx] != leaf_subspace[feature]:
+                        good_leaf = False
+                        break
+                if good_leaf:
+                    leaf.base_learner.update_single_future_purchase(pulled_arms_data[i], obs)
+
+    def pull_arms(self):
+        """ get a structure of arm to pull according to the context """
+        pass

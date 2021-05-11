@@ -63,7 +63,9 @@ class TreeNode:
         assert splitting_feature in self.all_features and splitting_feature not in list(self.feature_subspace.keys()), \
             f"Cannot split the current node using `{splitting_feature}` as feature."
         # use deepcopy to get a child object that does not interfere with the parent one
-        # TODO: HOW TO DEAL WITH THE ESTIMATION OF THE NEXT PURCHASE ?
+        # TODO: HOW TO DEAL WITH THE ESTIMATION OF THE NEXT PURCHASE ? NOW A COPY OF THE BASE LEARNER IS USED.
+        left_learner.set_next_purchases_data(self.base_learner.get_next_purchases_data())
+        right_learner.set_next_purchases_data(self.base_learner.get_next_purchases_data())
         # left node --> feature = False
         self.left_child = TreeNode(self.all_features, left_learner)
         self.left_child.feature_subspace = copy.deepcopy(self.feature_subspace)

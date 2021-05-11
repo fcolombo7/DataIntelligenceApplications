@@ -61,7 +61,7 @@ class ContextualEnvironment:
 
         return daily_rew
 
-    def get_future_purchases(self, day):  # todo: how to distinguish for customer class ?
+    def get_future_purchases(self, day):
         if day < 30:
             return None, []
         return self.selected_arms.pop(day - 30), self.collected_future_purchases.pop(day - 30), self.collected_users_features.pop(day - 30)

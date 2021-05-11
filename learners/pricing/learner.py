@@ -82,13 +82,35 @@ class Learner(ABC):
         for outcome, cost in daily_rew:
             self.update(pulled_arm, outcome, cost)
 
-    def update_future_purchases(self, pulled_arm, daily_future_obs):
+    def update_future_purchases(self, pulled_arm, daily_future_obs): # todo: check the step 3, probably can be changed and this method can be removed
         if self.next_purchases_update == 'binomial':
             for ob in daily_future_obs:
                 self.__binomial_update(pulled_arm, ob)
                 self.next_purchases_observations[pulled_arm].append(ob)
         else:
             raise NotImplementedError()
+
+    def update_single_future_purchase(self, pulled_arm, single_obs): # TODO: new method used in the contextual version
+        if self.next_purchases_update == 'binomial':
+            self.__binomial_update(pulled_arm, single_obs)
+            self.next_purchases_observations[pulled_arm].append(single_obs)
+        else:
+            raise NotImplementedError()
+
+    def get_next_purchases_data(self):
+        """
+        Method used to get the data about the estimation of the next purchases distributions.
+        """
+        return self.next_purchases_estimation, self.next_purchases_observations, self.next_purchases_update
+
+    def set_next_purchases_data(self, estimation, observations, update_mode):
+        """
+        Method used to get data about previous computations of the estimates of the next purchases.
+        This method is used when the context generation create a new learner.
+        """
+        self.next_purchases_estimation = estimation
+        self.next_purchases_observations = observations
+        self.next_purchases_update = update_mode
 
     @abstractmethod
     def pull_arm(self) -> int:
