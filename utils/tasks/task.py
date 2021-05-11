@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import shutil
+from typing import Dict
 from abc import ABC, abstractmethod
 from multiprocessing import Process, cpu_count, Manager
 from zipfile import ZipFile
@@ -11,15 +12,12 @@ class Task(ABC):
     """
     Abstract class used to represent the tasks run by the simulator
     """
-    def __init__(self, name, description, verbose):
+    def __init__(self, name: str, description: str, verbose: int):
         """
         Class constructor
         :param name: the name of the task
-        :type name: str
         :param description: the description of the task
-        :type description: str
         :param verbose: level of verbose. (0 or 1)
-        :type: int
         """
         self.name = name
         self.description = description
@@ -36,7 +34,7 @@ class Task(ABC):
         self.result = {}
 
     @abstractmethod
-    def _serial_run(self, process_id: int, n_experiments: int, collector):
+    def _serial_run(self, process_id: int, n_experiments: int, collector: Dict) -> None:
         """
         Single core execution of the simulation.
         :param process_id: identifier of the process.
@@ -47,7 +45,7 @@ class Task(ABC):
         pass
 
     @abstractmethod
-    def config(self, *args):
+    def config(self, *args) -> None:
         """
         Method used to configure the hyper paramenter of the simulation
         :param args: hyperparameter of the simulation
@@ -56,7 +54,7 @@ class Task(ABC):
         pass
 
     @abstractmethod
-    def _finalize_run(self, collected_values):
+    def _finalize_run(self, collected_values: list) -> None:
         """
         Method used to aggregate all the result computed by each core, and set the final result [`result`: dict]
         :param collected_values: values computed by each core
@@ -64,7 +62,7 @@ class Task(ABC):
         pass
 
     @abstractmethod
-    def plot(self, plot_number, figsize):
+    def plot(self, plot_number: int, figsize: (float, float)) -> None:
         """
         Plot the result of the simulation.
         :param plot_number: Which plot to show.
@@ -72,7 +70,7 @@ class Task(ABC):
         """
         pass
 
-    def run(self, force=False, parallelize=True, cores_number=-1):
+    def run(self, force=False, parallelize=True, cores_number=-1) -> None:
         """
         Method used to start the simulation of the Task.
         :param force: if False (default) check if the task has been already executed/loaded. If so the execution is skipped.
@@ -112,7 +110,7 @@ class Task(ABC):
         self._finalize_run(collector.values())
         self._finalize_execution()
 
-    def load(self, filename):
+    def load(self, filename: str) -> None:
         """
         Load the result computed by a previous simulation.
         :param filename: path to the zip file containing the simulation to load.
@@ -127,7 +125,7 @@ class Task(ABC):
         self.ready = True
         self._print(f"Simulation's result loaded from `{filename}`.")
 
-    def save(self, folder='simulations_results', overwrite=False):
+    def save(self, folder='simulations_results', overwrite=False) -> None:
         """
         Save the result computed by the current simulation.
         :param folder: output folder.
@@ -167,7 +165,7 @@ class Task(ABC):
         os.chdir(cur_dir)
         self._print(f"The simulation's result is stored in `{folder}/{filename}.zip`.")
 
-    def _print(self, text: str):
+    def _print(self, text: str) -> None:
         """
         Custom print according to the class verbose.
         :param text: String to be printed.
@@ -175,7 +173,7 @@ class Task(ABC):
         if self.verbose != 0:
             print(text)
 
-    def _finalize_execution(self):
+    def _finalize_execution(self) -> None:
         """
         Append information to the metadata structure and make the result available to be plotted.
         """

@@ -1,6 +1,7 @@
+from typing import Dict
+
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 import seaborn as sns
 
 from environments.pricing_environment import PricingEnvironment
@@ -34,7 +35,7 @@ class Task3(Task):
         self.opt_arm = np.argmax(self.margins * self.conversion_rates * (1 + self.future_purchases) -
                                  self.costs_per_click[self.selected_bid])
 
-    def _serial_run(self, process_number: int, n_experiments: int, collector):
+    def _serial_run(self, process_id: int, n_experiments: int, collector: Dict) -> None:
         rewards_per_experiment = {}
         for learner in self.learners_to_test:
             rewards_per_experiment[learner.LEARNER_NAME] = []
@@ -42,7 +43,7 @@ class Task3(Task):
         for e in range(n_experiments):
             # Initialization of the learners to test and their related environment:
             # the list is composed of tuples (Learner, Environment)
-            self._print(f'core_{process_number}: running experiment {e+1}/{n_experiments}...')
+            self._print(f'core_{process_id}: running experiment {e+1}/{n_experiments}...')
             test_instances = []
             for learner in self.learners_to_test:
                 test_instances.append((learner(arm_values=self.margins),
@@ -63,9 +64,9 @@ class Task3(Task):
             for learner, _ in test_instances:
                 rewards_per_experiment[learner.LEARNER_NAME].append(learner.daily_collected_rewards)
         # end -> save rhe results.
-        collector[process_number] = rewards_per_experiment
+        collector[process_id] = rewards_per_experiment
 
-    def _finalize_run(self, collected_values):
+    def _finalize_run(self, collected_values: list):
         # set the result attribute
         aggregate_dict = {}
         for learner in self.learners_to_test:
@@ -79,8 +80,8 @@ class Task3(Task):
             self.result[learner.LEARNER_NAME] = np.mean(aggregate_dict[learner.LEARNER_NAME], axis=0).tolist()
 
     def config(self,
-               time_horizon,
-               n_experiments,
+               time_horizon: int,
+               n_experiments: int,
                learner_to_test=None,
                verbose=1):
         if learner_to_test is None:
@@ -105,12 +106,12 @@ class Task3(Task):
         self.T = self.metadata['TIME_HORIZON']
         self.n_experiments = self.metadata['NUMBER_OF_EXPERIMENTS']
 
-    def plot(self, plot_number=0, figsize=(10, 8)):
+    def plot(self, plot_number=0, figsize=(10, 8), theme="white"):
         assert self.ready
         if plot_number < 0 or plot_number > 1:
             raise TypeError("`plot_number` kwarg error: only 2 plot are available.")
 
-        sns.set_theme(style="darkgrid")
+        sns.set_theme(style=theme)
 
         opt = (self.margins[self.opt_arm] * self.conversion_rates[self.opt_arm] *
                (1 + self.future_purchases[self.opt_arm]) - self.costs_per_click[self.selected_bid]) * \
