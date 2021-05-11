@@ -11,6 +11,11 @@ class DataGenerator(ABC):
         pass
 
     @abstractmethod
+    def get_features(self):
+        """ Get the boolean features describing the feature space. """
+        pass
+
+    @abstractmethod
     def get_margins(self):
         """ Get the margin associated to each price. """
         pass

@@ -15,12 +15,26 @@ class BasicDataGenerator(DataGenerator):
         self._data = None
         with open(self._filename) as f:
             self._data = json.load(f)
+        # features
+        self._features = self._data['features']
         # classes
-        self._classes = self._data['classes']
-        self._class_distribution = []
+        self._classes = {}
         # class distributions
-        for cl in self._classes:
-            self._class_distribution.append(cl['fraction'])
+        self._class_distribution = []
+        for key in self._data['classes']:
+            self._classes[key] = {}
+            fraction = self._data['classes'][key]['fraction']
+            self._classes[key]['fraction'] = fraction
+            self._class_distribution.append(fraction)
+            self._classes[key]['features'] = []  # the goal is to have a list of tuple, representing the subspace
+            if not isinstance(self._data['classes'][key]['features'][0], list):
+                features = self._data['classes'][key]['features']
+                self._classes[key]['features'].append((features[0], features[1]))
+            else:
+                # TODO: Here i need a list of lists, but in doing the cast from the json the outer list is discarded.
+                for features in self._data['classes'][key]['features']:
+                    self._classes[key]['features'].append((features[0], features[1]))
+
         # prices
         self._prices = self._data['prices']
         # bids
@@ -43,6 +57,9 @@ class BasicDataGenerator(DataGenerator):
     def get_all(self):
         """Return the content of the input source."""
         return self._data
+
+    def get_features(self):
+        return self._features
 
     def get_prices(self):
         """Return the available prices."""
