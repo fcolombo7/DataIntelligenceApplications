@@ -20,12 +20,14 @@ class Learner(ABC):
         :type next_purchases_update: str
         """
 
-        self.t = 0
+        self.t = 0  # t is the counter of update
+        self.day = 0  # day is the counter of days
         self.n_arms = len(arm_values)
         self.arm_values = arm_values
         self.outcome_per_arm = [[] for _ in range(self.n_arms)]
         self.collected_rewards = np.array([])
         self.daily_collected_rewards = np.array([])
+        self.daily_rewards = []  # auxiliary variable that stores the rewards collected in one day
 
         self.period = period
         self.next_purchases_estimation = np.zeros(self.n_arms)
@@ -43,6 +45,7 @@ class Learner(ABC):
         self.outcome_per_arm[pulled_arm].append(outcome)
         actual_reward = outcome * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]) - cost
         self.collected_rewards = np.append(self.collected_rewards, actual_reward)
+        self.daily_rewards.append(actual_reward)
 
     def __binomial_update(self, pulled_arm, next_purchases):
         """
@@ -51,16 +54,6 @@ class Learner(ABC):
         :param next_purchases:
         :return:
         """
-        # TODO: I was estimating the parameter p of the binomial, while i need the mean only
-        """
-        n_observations = len(self.next_purchases_observations[pulled_arm])
-        if n_observations == 0:
-            self.next_purchases_estimation[pulled_arm] = next_purchases / self.period
-        else:
-            self.next_purchases_estimation[pulled_arm] = \
-                (self.next_purchases_estimation[pulled_arm] * n_observations * self.period + next_purchases) / \
-                (self.period * (n_observations + 1))
-        """
         n_observations = len(self.next_purchases_observations[pulled_arm])
         if n_observations == 0:
             self.next_purchases_estimation[pulled_arm] = next_purchases
@@ -68,29 +61,19 @@ class Learner(ABC):
             self.next_purchases_estimation[pulled_arm] = \
                 (self.next_purchases_estimation[pulled_arm] * n_observations + next_purchases) / (n_observations + 1)
 
-    def daily_update(self, pulled_arm, daily_rew):
+    def next_day(self) -> None:
+        """ Increment the day counter """
+        self.day += 1
+        self.daily_collected_rewards = np.append(self.daily_collected_rewards, np.sum(self.daily_rewards))
+        # reset the collector variable
+        self.daily_rewards = []
+
+    def update_single_future_purchase(self, pulled_arm, single_obs):  # TODO: new method used in the contextual version
         """
-
-        :param pulled_arm:
-        :param daily_rew:
-        :return:
+        Update the next purchases observation using a single observation of arm-value pair.
+        :param pulled_arm: arm pulled 30 days in the past
+        :param single_obs: number of purchases done in the past 30 days
         """
-        # TODO: mean, not the parameter of the binomial -->
-        #  r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]*self.period) - daily_rew[:, 1]
-        r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]) - daily_rew[:, 1]
-        self.daily_collected_rewards = np.append(self.daily_collected_rewards, np.sum(r))
-        for outcome, cost in daily_rew:
-            self.update(pulled_arm, outcome, cost)
-
-    def update_future_purchases(self, pulled_arm, daily_future_obs): # todo: check the step 3, probably can be changed and this method can be removed
-        if self.next_purchases_update == 'binomial':
-            for ob in daily_future_obs:
-                self.__binomial_update(pulled_arm, ob)
-                self.next_purchases_observations[pulled_arm].append(ob)
-        else:
-            raise NotImplementedError()
-
-    def update_single_future_purchase(self, pulled_arm, single_obs): # TODO: new method used in the contextual version
         if self.next_purchases_update == 'binomial':
             self.__binomial_update(pulled_arm, single_obs)
             self.next_purchases_observations[pulled_arm].append(single_obs)
@@ -99,15 +82,15 @@ class Learner(ABC):
 
     def get_next_purchases_data(self):
         """
-        Method used to get the data about the estimation of the next purchases distributions.
-        """
+            Method used to get the data about the estimation of the next purchases distributions.
+            """
         return self.next_purchases_estimation, self.next_purchases_observations, self.next_purchases_update
 
     def set_next_purchases_data(self, estimation, observations, update_mode):
         """
-        Method used to get data about previous computations of the estimates of the next purchases.
-        This method is used when the context generation create a new learner.
-        """
+            Method used to get data about previous computations of the estimates of the next purchases.
+            This method is used when the context generation create a new learner.
+            """
         self.next_purchases_estimation = estimation
         self.next_purchases_observations = observations
         self.next_purchases_update = update_mode
@@ -119,12 +102,32 @@ class Learner(ABC):
     @abstractmethod
     def update(self, pulled_arm, outcome, cost):
         """
-        :param pulled_arm:
-        :param outcome:
-        :param cost:
-        """
+            :param pulled_arm:
+            :param outcome:
+            :param cost:
+            """
         pass
 
     @abstractmethod
     def get_opt_arm_expected_value(self) -> (float, int):
         pass
+
+
+"""
+def update_future_purchases(self, pulled_arm, daily_future_obs): # todo: check the step 3, probably can be changed and this method can be removed
+    if self.next_purchases_update == 'binomial':
+        for ob in daily_future_obs:
+            self.__binomial_update(pulled_arm, ob)
+            self.next_purchases_observations[pulled_arm].append(ob)
+    else:
+        raise NotImplementedError()
+"""
+"""   
+    def daily_update(self, pulled_arm, daily_rew):
+        # TODO: mean, not the parameter of the binomial -->
+        #  r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]*self.period) - daily_rew[:, 1]
+        r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]) - daily_rew[:, 1]
+        self.daily_collected_rewards = np.append(self.daily_collected_rewards, np.sum(r))
+        for outcome, cost in daily_rew:
+            self.update(pulled_arm, outcome, cost)
+    """

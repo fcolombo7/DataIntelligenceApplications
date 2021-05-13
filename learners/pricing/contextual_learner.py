@@ -1,5 +1,4 @@
 from learners.pricing.learner import Learner
-from utils.context_generator import TreeNode
 
 
 class ContextualLearner:
@@ -9,7 +8,7 @@ class ContextualLearner:
         self.base_learner_class = base_learner_class
         self.base_learner_args = base_learner_args
         # definition of the datastructures that handle the contexts
-        self.context_tree: TreeNode = None
+        self.context_tree = None
 
     def update_context_tree(self, new_context_tree):
         self.context_tree = new_context_tree
@@ -58,8 +57,7 @@ class ContextualLearner:
         :param features_data: list of tuples representing the realization of the feature space
         """
         leaves = self.context_tree.get_leaves()
-        dispatched_data = [[] for _ in leaves]
-        # scan the data received by the environment to populate the proper list according to the context
+        # scan the data received by the environment and update the proper learner according to the context
         for i, obs in enumerate(next_purchases_data):
             # i -> index used to scan the data received by the environment
             for j, leaf in enumerate(leaves):
@@ -76,4 +74,28 @@ class ContextualLearner:
 
     def pull_arms(self):
         """ get a structure of arm to pull according to the context """
-        pass
+        context_arm_data = []
+        for leaf in self.context_tree.get_leaves():
+            context_arm_data.append((leaf.feature_subspace, leaf.base_learner.pull_arm()))
+        return context_arm_data
+
+    def update(self, daily_reward, pulled_arms, user_features):
+        # scan and divide according to the features
+        leaves = self.context_tree.get_leaves()
+        dispatched_data = [[] for _ in leaves]
+
+        # TODO: c'è da cambiare il learner !!!!  daily update non si può più usare ?
+
+        for i, obs in enumerate(daily_reward):
+            # i -> index used to scan the data received by the environment
+            for j, leaf in enumerate(leaves):
+                # j -> index used to keep track of the correct leaf
+                leaf_subspace = leaf.feature_subspace
+                good_leaf = True
+                for feature in leaf_subspace:
+                    feature_idx = self.features.index(feature)
+                    if features_data[i][feature_idx] != leaf_subspace[feature]:
+                        good_leaf = False
+                        break
+                if good_leaf:
+                    leaf.base_learner.update_single_future_purchase(pulled_arms_data[i], obs)
