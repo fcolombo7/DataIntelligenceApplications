@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 from data_generators.basic_generator import *
+from sklearn import preprocessing
 
 
 class Environment(ABC):
     """Environment abstract base class.
     Constructor method uploads all the basic data from the given json source in the given mode"""
 
-    def __init__(self, mode='all', src='src/basic002.json'):
+    def __init__(self, mode='all', src='src/basic003.json'):
         self.data_gen = BasicDataGenerator(src)
 
         self.bids = self.data_gen.get_bids()
