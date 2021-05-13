@@ -1,4 +1,5 @@
 from learners.Learner import *
+from scipy.stats import norm
 
 class GTS_Learner(Learner):
     
