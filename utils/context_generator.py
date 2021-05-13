@@ -2,6 +2,7 @@ import copy
 import numpy as np
 
 from learners.pricing.contextual_learner import ContextualLearner
+from learners.pricing.learner import Learner
 
 
 class TreeNode:
@@ -15,13 +16,13 @@ class TreeNode:
         :param all_features: all the dimensions of the space
         :param base_learner: learner
         """
-        self.left_child = None
-        self.right_child = None
-        self.all_features = all_features
-        self.base_learner = base_learner
+        self.left_child: TreeNode = None
+        self.right_child: TreeNode = None
+        self.all_features: dict = all_features
+        self.base_learner: Learner = base_learner
         # todo: option1 --- dictionary where the keys are the features already expanded at the current node.
         #  dict[feature_name] = True/False
-        self.feature_subspace = {}
+        self.feature_subspace: dict = {}
 
     def __str__(self):
         # f'all_features{self.all_features}\n' \
@@ -83,7 +84,7 @@ class ContextGenerator:
     determines how and when it is worth to generate a new Context.
     """
 
-    def __init__(self, features: [], contextual_learner: ContextualLearner, update_frequency: int, confidence: float):
+    def __init__(self, features: [], contextual_learner: ContextualLearner, update_frequency: int, start_from: int, confidence: float):
         """
         Class constructor
         :param features: all the features considered.
@@ -100,6 +101,7 @@ class ContextGenerator:
 
         self.contextual_learner = contextual_learner
         self.update_frequency = update_frequency
+        self.start_from = start_from
         self.confidence = confidence
 
         self.context_tree = TreeNode(features, self.contextual_learner.get_root_learner())
@@ -124,16 +126,15 @@ class ContextGenerator:
         else:
             self.collected_features = np.vstack((self.collected_features, features))
         # self.collected_features = np.append(self.collected_features, features)
-        self.t += 1
         self.context_generation()
+        self.t += 1
 
     def context_generation(self):
         """
         Algorithm that evaluates the possibility of generating a new context.
         """
-        if self.t % self.update_frequency != 0:
+        if self.t % self.update_frequency != 0 and self.start_from <= self.t:
             return
-        # TODO: CHEK ALL!
         # get all the leaves that can be further expanded
         leaves = []
         for leaf in self.context_tree.get_leaves():
