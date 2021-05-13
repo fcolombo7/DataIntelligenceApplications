@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 from multiprocessing import Process, cpu_count, Manager
 from zipfile import ZipFile
 
+import numpy as np
+
 
 class Task(ABC):
     """
@@ -100,7 +102,7 @@ class Task(ABC):
             else:
                 cores_number = max(cpu_count(), cores_number)
 
-        num_exp_per_process = round(self.n_experiments / cores_number)
+        num_exp_per_process = int(np.ceil(self.n_experiments / cores_number))
         processes = [Process(target=self._serial_run, args=(n, num_exp_per_process, collector)) for n
                      in range(0, cores_number)]
         for p in processes:

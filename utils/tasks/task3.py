@@ -47,19 +47,22 @@ class Task3(Task):
             test_instances = []
             for learner in self.learners_to_test:
                 test_instances.append((learner(arm_values=self.margins),
-                                       PricingEnvironment(n_arms=len(self.prices),
-                                                          conversion_rates=self.conversion_rates,
+                                       PricingEnvironment(conversion_rates=self.conversion_rates,
                                                           cost_per_click=self.fixed_cost,
                                                           n_clicks=self.fixed_n_clicks,
                                                           tau=self.future_purchases)))
             for t in range(self.T):
                 for learner, env in test_instances:
-                    prev_arm, prev_future_purchases = env.get_future_purchases(t)
-                    if prev_arm is not None:
-                        learner.update_future_purchases(prev_arm, prev_future_purchases)
+                    month_purchases = env.get_next_purchases_at_day(t, keep=False)
+                    if month_purchases is not None:
+                        pulled_arms = env.get_selected_arms_at_day(t - 30, keep=False)
+                        for arm, n_purchases in zip(pulled_arms, month_purchases):
+                            learner.update_single_future_purchase(arm, n_purchases)
                     pulled_arm = learner.pull_arm()
                     daily_reward = env.day_round(pulled_arm)
-                    learner.daily_update(pulled_arm, daily_reward)
+                    for outcome, cost in daily_reward:
+                        learner.update(pulled_arm, outcome, cost)
+                    learner.next_day()
 
             for learner, _ in test_instances:
                 rewards_per_experiment[learner.LEARNER_NAME].append(learner.daily_collected_rewards)
