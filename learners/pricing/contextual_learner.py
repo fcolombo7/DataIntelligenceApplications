@@ -60,8 +60,7 @@ class ContextualLearner:
         # scan the data received by the environment and update the proper learner according to the context
         for i, obs in enumerate(next_purchases_data):
             # i -> index used to scan the data received by the environment
-            for j, leaf in enumerate(leaves):
-                # j -> index used to keep track of the correct leaf
+            for leaf in leaves:
                 leaf_subspace = leaf.feature_subspace
                 good_leaf = True
                 for feature in leaf_subspace:
@@ -71,6 +70,8 @@ class ContextualLearner:
                         break
                 if good_leaf:
                     leaf.base_learner.update_single_future_purchase(pulled_arms_data[i], obs)
+                    # print(f'next purch: {pulled_arms_data[i]}, {obs}')
+                    break
 
     def pull_arms(self):
         """ get a structure of arm to pull according to the context """
@@ -79,23 +80,26 @@ class ContextualLearner:
             context_arm_data.append((leaf.feature_subspace, leaf.base_learner.pull_arm()))
         return context_arm_data
 
+    def next_day(self):
+        leaves = self.context_tree.get_leaves()
+        for leaf in leaves:
+            leaf.base_learner.next_day()
+
     def update(self, daily_reward, pulled_arms, user_features):
         # scan and divide according to the features
         leaves = self.context_tree.get_leaves()
-        dispatched_data = [[] for _ in leaves]
-
-        # TODO: c'è da cambiare il learner !!!!  daily update non si può più usare ?
-
         for i, obs in enumerate(daily_reward):
             # i -> index used to scan the data received by the environment
-            for j, leaf in enumerate(leaves):
-                # j -> index used to keep track of the correct leaf
+            for leaf in leaves:
                 leaf_subspace = leaf.feature_subspace
                 good_leaf = True
                 for feature in leaf_subspace:
                     feature_idx = self.features.index(feature)
-                    if features_data[i][feature_idx] != leaf_subspace[feature]:
+                    if user_features[i][feature_idx] != leaf_subspace[feature]:
                         good_leaf = False
                         break
                 if good_leaf:
-                    leaf.base_learner.update_single_future_purchase(pulled_arms_data[i], obs)
+                    leaf.base_learner.update(pulled_arms[i], obs[0], obs[1])
+                    # if len(leaf.feature_subspace.keys()) != 0:
+                    #    print(f'#{i}: [{user_features[i]}] -> {leaf.feature_subspace}')
+                    break

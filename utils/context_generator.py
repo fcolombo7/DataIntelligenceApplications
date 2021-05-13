@@ -65,8 +65,8 @@ class TreeNode:
             f"Cannot split the current node using `{splitting_feature}` as feature."
         # use deepcopy to get a child object that does not interfere with the parent one
         # TODO: HOW TO DEAL WITH THE ESTIMATION OF THE NEXT PURCHASE ? NOW A COPY OF THE BASE LEARNER IS USED.
-        left_learner.set_next_purchases_data(self.base_learner.get_next_purchases_data())
-        right_learner.set_next_purchases_data(self.base_learner.get_next_purchases_data())
+        # left_learner.set_next_purchases_data(self.base_learner.get_next_purchases_data())
+        # right_learner.set_next_purchases_data(self.base_learner.get_next_purchases_data())
         # left node --> feature = False
         self.left_child = TreeNode(self.all_features, left_learner)
         self.left_child.feature_subspace = copy.deepcopy(self.feature_subspace)
@@ -97,6 +97,12 @@ class ContextGenerator:
         self.collected_arms = np.array([], dtype=np.int)
         self.collected_rewards = None
         self.collected_features = None
+
+        # TODO: HEREEE hope this can be useless...
+        self.collected_next_purchases = np.array([], dtype=np.int)
+        self.collected_past_pulled_arms = np.array([], dtype=np.int)
+        self.collected_past_features = []
+
         self.t = 0
 
         self.contextual_learner = contextual_learner
@@ -107,7 +113,9 @@ class ContextGenerator:
         self.context_tree = TreeNode(features, self.contextual_learner.get_root_learner())
         self._update_contextual_learner()
 
-    def collect_daily_data(self, pulled_arms, rewards, features):
+    # TODO: HERE!!!!
+    def collect_daily_data(self, pulled_arms, rewards, features,
+                           next_purchases=None, past_pulled_arms=None, past_features=None):
         """
         Collect the data produced by the environment in one day
         :param pulled_arms:
@@ -126,6 +134,30 @@ class ContextGenerator:
         else:
             self.collected_features = np.vstack((self.collected_features, features))
         # self.collected_features = np.append(self.collected_features, features)
+        if next_purchases is not None:
+            self.collected_next_purchases = np.append(self.collected_next_purchases, next_purchases)
+            """
+            if self.collected_next_purchases is None:
+                self.collected_next_purchases = next_purchases
+            else:
+                self.collected_next_purchases = np.vstack((self.collected_next_purchases, next_purchases))
+            """
+        if past_pulled_arms is not None:
+            self.collected_past_pulled_arms = np.append(self.collected_past_pulled_arms, past_pulled_arms)
+            """
+            if self.collected_past_pulled_arms is None:
+                self.collected_past_pulled_arms = past_pulled_arms
+            else:
+                self.collected_past_pulled_arms = np.vstack((self.collected_past_pulled_arms, past_pulled_arms))
+            """
+        if past_features is not None:
+            self.collected_past_features = self.collected_past_features + past_features
+            """
+            if self.collected_past_features is None:
+                self.collected_past_features = past_features
+            else:
+                self.collected_past_features = self.collected_past_features + past_features
+            """
         self.context_generation()
         self.t += 1
 
@@ -133,7 +165,7 @@ class ContextGenerator:
         """
         Algorithm that evaluates the possibility of generating a new context.
         """
-        if self.t % self.update_frequency != 0 and self.start_from <= self.t:
+        if self.t % self.update_frequency != 0 or self.start_from > self.t:
             return
         # get all the leaves that can be further expanded
         leaves = []
@@ -168,9 +200,8 @@ class ContextGenerator:
         print(f'\tValues after the split: {values_after_split}')
         print(f'\tValue before the split: {value_before}\n')
         if value_before < max_value:
-            best_feature = self.features[idx]
-        # if there is a feature for which it is worth to split
-        if best_feature is not None:
+            best_feature = features[idx]
+            # there is a feature for which it is worth to split
             print(f'\t{best_feature=}')
             leaf.split(best_feature, left_learners[idx], right_learners[idx])
             self._update_contextual_learner()
@@ -229,6 +260,17 @@ class ContextGenerator:
             right_learner = self._get_offline_trained_lerner(pulled_arms=self.collected_arms[right_split_indices],
                                                              rewards=self.collected_rewards[right_split_indices, 0],
                                                              costs=self.collected_rewards[right_split_indices, 1])
+            # update the learners with the data collected about the next purchases
+            # left_subspace = copy.deepcopy(leaf.feature_subspace)
+            # right_subspace = copy.deepcopy(leaf.feature_subspace)
+            # left_subspace[feature] = False
+            # right_subspace[feature] = True
+            # self._offline_update_next_purchases(left_learner, left_subspace)
+            # self._offline_update_next_purchases(left_learner, right_subspace)
+
+            estimation, observations, update_mode = leaf.base_learner.get_next_purchases_data()
+            left_learner.set_next_purchases_data(estimation, observations, update_mode)
+            right_learner.set_next_purchases_data(estimation, observations, update_mode)
             # compute the values after the split
             left_value = left_learner.get_opt_arm_expected_value()[0]
             right_value = right_learner.get_opt_arm_expected_value()[0]
@@ -272,7 +314,20 @@ class ContextGenerator:
         :return:
         """
         learner = self.contextual_learner.get_root_learner()
+        print(f'Training a new learner with {len(pulled_arms)} observations.')
         for a, r, c in zip(pulled_arms, rewards, costs):
             # print(a, r, c)
             learner.update(a, r, c)
         return learner
+
+    def _offline_update_next_purchases(self, learner, subspace):
+        for i, purchases in enumerate(self.collected_next_purchases):
+            update = True
+            for f in subspace.keys():
+                f_id = self.features.index(f)
+                if self.collected_past_features[i][f_id] != subspace[f]:
+                    update = False
+                    break
+            if update:
+                # print(f'{self.collected_past_pulled_arms[i]=}, {purchases=}')
+                learner.update_single_future_purchase(self.collected_past_pulled_arms[i], purchases)
