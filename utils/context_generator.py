@@ -53,6 +53,13 @@ class TreeNode:
         # concatenation of the children' leaves
         return left_leaves + right_leaves
 
+    def get_daily_rewards(self):
+        reward = np.append(np.array([]), self.base_learner.daily_collected_rewards)
+        if not self.is_leaf():
+            children_rewards = self.left_child.get_daily_rewards() + self.right_child.get_daily_rewards()
+            reward = np.append(reward, children_rewards)
+        return reward
+
     def split(self, splitting_feature, left_learner, right_learner):
         """
         Method used to actually create a new context.
@@ -64,7 +71,7 @@ class TreeNode:
         assert splitting_feature in self.all_features and splitting_feature not in list(self.feature_subspace.keys()), \
             f"Cannot split the current node using `{splitting_feature}` as feature."
         # use deepcopy to get a child object that does not interfere with the parent one
-        # TODO: HOW TO DEAL WITH THE ESTIMATION OF THE NEXT PURCHASE ? NOW A COPY OF THE BASE LEARNER IS USED.
+        # TODO: HOW TO DEAL WITH THE ESTIMATION OF THE NEXT PURCHASE ? Already done in the context generator.
         # left_learner.set_next_purchases_data(self.base_learner.get_next_purchases_data())
         # right_learner.set_next_purchases_data(self.base_learner.get_next_purchases_data())
         # left node --> feature = False
@@ -75,6 +82,8 @@ class TreeNode:
         self.right_child = TreeNode(self.all_features, right_learner)
         self.right_child.feature_subspace = copy.deepcopy(self.feature_subspace)
         self.right_child.feature_subspace[splitting_feature] = True
+        # todo: ???
+        self.base_learner.next_day()
         print(f'NEW CONTEXT GENERATED:\n splitting into -> {self.left_child.feature_subspace} and {self.right_child.feature_subspace}')
 
 
@@ -192,7 +201,7 @@ class ContextGenerator:
         # now get the max value after the split and the index
         max_value = max(values_after_split)
         idx = values_after_split.index(max_value)
-        print(f'{max_value=} [{idx=}]')
+        # print(f'{max_value=} [{idx=}]')
         # check if the value is larger than the value before split
         before_learner = leaf.base_learner
         value_before = self._compute_lower_bound(before_learner.get_opt_arm_expected_value()[0],
@@ -280,7 +289,7 @@ class ContextGenerator:
                           self._compute_lower_bound(right_value, len(right_learner.collected_rewards))
 
             # print(f'  * {feature}: p_L={left_split_probability}, v_L={left_value} - p_R={right_split_probability}, v_R={right_value}')
-            print(f' --> {value_after=}\n')
+            # print(f' --> {value_after=}\n')
             values_after_split.append(value_after)
             right_learners.append(right_learner)
             left_learners.append(left_learner)
@@ -314,7 +323,7 @@ class ContextGenerator:
         :return:
         """
         learner = self.contextual_learner.get_root_learner()
-        print(f'Training a new learner with {len(pulled_arms)} observations.')
+        # print(f'Training a new learner with {len(pulled_arms)} observations.')
         for a, r, c in zip(pulled_arms, rewards, costs):
             # print(a, r, c)
             learner.update(a, r, c)

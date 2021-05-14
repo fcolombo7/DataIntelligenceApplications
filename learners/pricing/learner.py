@@ -21,7 +21,7 @@ class Learner(ABC):
         """
 
         self.t = 0  # t is the counter of update
-        self.day = 0  # day is the counter of days
+        self.day = -1  # day is the counter of days
         self.n_arms = len(arm_values)
         self.arm_values = arm_values
         self.outcome_per_arm = [[] for _ in range(self.n_arms)]
@@ -63,10 +63,11 @@ class Learner(ABC):
 
     def next_day(self) -> None:
         """ Increment the day counter """
-        self.day += 1
-        self.daily_collected_rewards = np.append(self.daily_collected_rewards, np.sum(self.daily_rewards))
+        if self.day != -1:
+            self.daily_collected_rewards = np.append(self.daily_collected_rewards, np.sum(self.daily_rewards))
         # reset the collector variable
         self.daily_rewards = []
+        self.day += 1
 
     def update_single_future_purchase(self, pulled_arm, single_obs):  # TODO: new method used in the contextual version
         """

@@ -103,3 +103,12 @@ class ContextualLearner:
                     # if len(leaf.feature_subspace.keys()) != 0:
                     #    print(f'#{i}: [{user_features[i]}] -> {leaf.feature_subspace}')
                     break
+
+    def get_daily_rewards(self):
+        rew = self.context_tree.get_daily_rewards()
+        # print(rew)
+        # print(f'daily rew length: {len(rew)}')
+        return rew
+
+    def get_splits_count(self):
+        return len(self.context_tree.get_leaves())

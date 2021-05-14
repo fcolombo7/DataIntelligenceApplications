@@ -53,6 +53,7 @@ class Task3(Task):
                                                           tau=self.future_purchases)))
             for t in range(self.T):
                 for learner, env in test_instances:
+                    learner.next_day()
                     month_purchases = env.get_next_purchases_at_day(t, keep=False)
                     if month_purchases is not None:
                         pulled_arms = env.get_selected_arms_at_day(t - 30, keep=False)
@@ -62,7 +63,6 @@ class Task3(Task):
                     daily_reward = env.day_round(pulled_arm)
                     for outcome, cost in daily_reward:
                         learner.update(pulled_arm, outcome, cost)
-                    learner.next_day()
 
             for learner, _ in test_instances:
                 rewards_per_experiment[learner.LEARNER_NAME].append(learner.daily_collected_rewards)
