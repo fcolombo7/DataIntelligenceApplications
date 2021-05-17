@@ -36,15 +36,18 @@ class Learner(ABC):
 
     def update_observations(self, pulled_arm, outcome, cost):
         """
-
+        If cost == -1 the learner is solving a bidding related problem
         :param pulled_arm:
         :param outcome:
         :param cost:
         :return: void
         """
         self.outcome_per_arm[pulled_arm].append(outcome)
-        actual_reward = outcome * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]) - cost
-        self.collected_rewards = np.append(self.collected_rewards, actual_reward)
+        if cost == -1:
+            actual_reward = outcome
+        else:
+            actual_reward = outcome * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]) - cost
+            self.collected_rewards = np.append(self.collected_rewards, actual_reward)
         self.daily_rewards.append(actual_reward)
 
     def __binomial_update(self, pulled_arm, next_purchases):
@@ -109,9 +112,6 @@ class Learner(ABC):
             """
         pass
 
-    @abstractmethod
-    def get_opt_arm_expected_value(self) -> (float, int):
-        pass
 
 
 """
