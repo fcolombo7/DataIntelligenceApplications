@@ -18,8 +18,7 @@ class Task3(Task):
     """
 
     def __init__(self, data_generator: DataGenerator, name="Step#3", description="", verbose=1):
-        super().__init__(name, description, verbose)
-        self.data_generator = data_generator
+        super().__init__(name, description, data_generator, verbose)
         # input data
         self.prices = data_generator.get_prices()
         self.bids = data_generator.get_bids()
@@ -65,6 +64,7 @@ class Task3(Task):
                         learner.update(pulled_arm, outcome, cost)
 
             for learner, _ in test_instances:
+                learner.next_day()
                 rewards_per_experiment[learner.LEARNER_NAME].append(learner.daily_collected_rewards)
         # end -> save rhe results.
         collector[process_id] = rewards_per_experiment

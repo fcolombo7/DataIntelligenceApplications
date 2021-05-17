@@ -4,17 +4,31 @@ import sys
 
 from data_generators.basic_generator import BasicDataGenerator
 from utils.tasks.task3 import Task3
+from utils.tasks.task4 import Task4
 
 
-def task_builder(step, source=None, simulation_name=None):
+def task_builder(step, time_horizon, n_experiments, source=None, simulation_name=None):
     if source is None:
         source = 'src/basic001.json'
     data_generator = BasicDataGenerator(source)
     if step == 3:
         description = 'Simulation of the step 3.'
+        task = None
         if simulation_name is None:
-            return Task3(data_generator, description=description)
-        return Task3(data_generator, name=simulation_name, description=description)
+            task = Task3(data_generator, description=description)
+        else:
+            task = Task3(data_generator, name=simulation_name, description=description)
+        task.config(time_horizon=time_horizon, n_experiments=n_experiments)
+        return task
+    if step == 4:
+        description = 'Simulation of the step 3.'
+        task = None
+        if simulation_name is None:
+            task = Task4(data_generator, description=description)
+        else:
+            task = Task4(data_generator, name=simulation_name, description=description)
+        task.config(time_horizon=time_horizon, n_experiments=n_experiments)
+        return task
 
 
 if __name__ == '__main__':
@@ -39,9 +53,9 @@ if __name__ == '__main__':
 
     args = vars(ap.parse_args())
 
-    task = task_builder(step=int(args['step']), source=args['src'], simulation_name=args['simulation_name'])
+    task = task_builder(step=int(args['step']), source=args['src'], simulation_name=args['simulation_name'],
+                        time_horizon=int(args['time_horizon']), n_experiments=int(args['n_experiments']))
 
-    task.config(int(args['time_horizon']), int(args['n_experiments']))
     parallelize = None
     if args['parallelize'] == 'true' or args['parallelize'] is None:
         parallelize = True

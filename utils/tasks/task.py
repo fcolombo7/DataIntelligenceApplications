@@ -6,6 +6,7 @@ from typing import Dict
 from abc import ABC, abstractmethod
 from multiprocessing import Process, cpu_count, Manager
 from zipfile import ZipFile
+from data_generators.data_generator import DataGenerator
 
 import numpy as np
 
@@ -14,7 +15,7 @@ class Task(ABC):
     """
     Abstract class used to represent the tasks run by the simulator
     """
-    def __init__(self, name: str, description: str, verbose: int):
+    def __init__(self, name: str, description: str, data_generator: DataGenerator, verbose: int):
         """
         Class constructor
         :param name: the name of the task
@@ -24,11 +25,13 @@ class Task(ABC):
         self.name = name
         self.description = description
         self.verbose = verbose
+        self.data_generator = data_generator
         self.ready = False
         self.metadata = {
             'NAME': self.name,
             'DESCRIPTION': self.description,
-            'EXECUTION_DATE': 'never'
+            'EXECUTION_DATE': 'never',
+            'SRC': data_generator.get_source()
         }
         self.T = None
         self.n_experiments = None
