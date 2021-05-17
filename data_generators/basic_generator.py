@@ -11,6 +11,7 @@ class BasicDataGenerator(DataGenerator):
     """
 
     def __init__(self, filename):
+
         self._filename = filename
         self._data = None
         with open(self._filename) as f:
@@ -50,8 +51,7 @@ class BasicDataGenerator(DataGenerator):
         # future_purchases
         self._future_purchases = self._data['future_purchases']
 
-    def get_filename(self):
-        """Return the path to the JSON input source."""
+    def get_source(self) -> str:
         return self._filename
 
     def get_all(self):
@@ -122,10 +122,10 @@ class BasicDataGenerator(DataGenerator):
         for cl in self._daily_clicks:
             clicks_per_bid = list(cl['upper_bound'] * (1.0 - np.exp(-1 * cl['speed_factor'] * np.array(self._bids))))
             daily_clicks.append(clicks_per_bid)
-        # TODO: CHECK HERE! Somma o media? Forse meglio somma.
+        # TODO: CHECK HERE! Somma o media? Forse meglio somma ---> No problema perchè se no le frazioni non servono a nulla e i dati sono sballati.
         if mode == 'all':
             return np.around(daily_clicks, decimals=3)
-        return np.around(np.sum(daily_clicks, axis=0), decimals=3)
+        return np.around(np.average(daily_clicks, axis=0, weights=self._class_distribution), decimals=3)
 
     def get_costs_per_click(self, mode='all'):
         """

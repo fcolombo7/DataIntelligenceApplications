@@ -62,3 +62,8 @@ class DataGenerator(ABC):
         [options: mode = all -> disjoint (default), mode = aggregate (aggregation performed as a weighted average]
         """
         pass
+
+    @abstractmethod
+    def get_source(self) -> str:
+        """ Get the input filename. """
+        pass
