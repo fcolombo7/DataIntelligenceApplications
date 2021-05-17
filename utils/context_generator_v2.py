@@ -5,6 +5,11 @@ from learners.pricing.contextual_learner import ContextualLearner
 from learners.pricing.learner import Learner
 
 
+def _print(text, verbose):
+    if verbose > 0:
+        print(text)
+
+
 class TreeNode:
     """
     class representing the single node of the Context Tree
@@ -78,8 +83,6 @@ class TreeNode:
         self.right_child.feature_subspace[splitting_feature] = True
         # collect the daily reward of the parent node to effectively count in the overall reward
         self.base_learner.next_day()
-        print(f'NEW CONTEXT GENERATED:\n splitting into -> {self.left_child.feature_subspace} and {self.right_child.feature_subspace}')
-
 
 class ContextGenerator:
     """
@@ -87,7 +90,8 @@ class ContextGenerator:
     determines how and when it is worth to generate a new Context.
     """
 
-    def __init__(self, features: [], contextual_learner: ContextualLearner, update_frequency: int, start_from: int, confidence: float):
+    def __init__(self, features: [], contextual_learner: ContextualLearner, update_frequency: int, start_from: int,
+                 confidence: float, verbose=1):
         """
         Class constructor
         :param features: all the features considered.
@@ -96,6 +100,7 @@ class ContextGenerator:
         :param update_frequency: frequency at which the context generation checks the data and run its generation algorithm.
         :param confidence: parameters used to determine the lower bound.
         """
+        self.verbose = verbose
         self.features = features
         self.collected_arms = np.array([], dtype=np.int)
         self.collected_rewards = None
@@ -142,28 +147,10 @@ class ContextGenerator:
         # self.collected_features = np.append(self.collected_features, features)
         if next_purchases is not None:
             self.collected_next_purchases = np.append(self.collected_next_purchases, next_purchases)
-            """
-            if self.collected_next_purchases is None:
-                self.collected_next_purchases = next_purchases
-            else:
-                self.collected_next_purchases = np.vstack((self.collected_next_purchases, next_purchases))
-            """
         if past_pulled_arms is not None:
             self.collected_past_pulled_arms = np.append(self.collected_past_pulled_arms, past_pulled_arms)
-            """
-            if self.collected_past_pulled_arms is None:
-                self.collected_past_pulled_arms = past_pulled_arms
-            else:
-                self.collected_past_pulled_arms = np.vstack((self.collected_past_pulled_arms, past_pulled_arms))
-            """
         if past_features is not None:
             self.collected_past_features = self.collected_past_features + past_features
-            """
-            if self.collected_past_features is None:
-                self.collected_past_features = past_features
-            else:
-                self.collected_past_features = self.collected_past_features + past_features
-            """
         self.context_generation()
         self.t += 1
 
@@ -181,8 +168,8 @@ class ContextGenerator:
         if len(leaves) == 0:
             return
         # check if it is worth to split the leaves
-        print(f'\n{"-"*20} RUNNING CONTEXT GENERATOR@t={self.t} {"-"*20}')
-        print(f'N_LEAVES: {len(leaves)}')
+        _print(f'\n{"-"*20} RUNNING CONTEXT GENERATOR@t={self.t} {"-"*20}', self.verbose)
+        _print(f'N_LEAVES: {len(leaves)}', self.verbose)
         for leaf in leaves:
             self._evaluate_split(leaf)  # for each leaf evaluate if it is worth to split
 
@@ -191,7 +178,7 @@ class ContextGenerator:
         Check is the leaf can be split.
         :param leaf: leaf to split.
         """
-        print(f"- Evaluating the Node: {leaf}")
+        _print(f"- Evaluating the Node: {leaf}", self.verbose)
 
         best_feature = None
         features, values_after_split, right_learners, left_learners = self._iterate_over_features(leaf)
@@ -203,13 +190,14 @@ class ContextGenerator:
         before_learner = leaf.base_learner
         value_before = self._compute_lower_bound(before_learner.get_opt_arm_expected_value()[0],
                                                  len(before_learner.collected_rewards))
-        print(f'\tValues after the split: {values_after_split}')
-        print(f'\tValue before the split: {value_before}\n')
+        _print(f'\tValues after the split: {values_after_split}', self.verbose)
+        _print(f'\tValue before the split: {value_before}\n', self.verbose)
         if value_before < max_value:
             best_feature = features[idx]
             # there is a feature for which it is worth to split
-            print(f'\t{best_feature=}')
+            _print(f'\t{best_feature=}', self.verbose)
             leaf.split(best_feature, left_learners[idx], right_learners[idx])
+            _print(f'NEW CONTEXT GENERATED:\n splitting into -> {leaf.left_child.feature_subspace} and {leaf.right_child.feature_subspace}', self.verbose)
             self._update_contextual_learner()
 
     def _iterate_over_features(self, leaf):
@@ -224,10 +212,10 @@ class ContextGenerator:
         left_learners = []
         # get the features that are not expanded
         available_features = list(set(leaf.all_features) - set(leaf.feature_subspace.keys()))
-        print(f'\nFeatures to check: {available_features}')
+        _print(f'\nFeatures to check: {available_features}', self.verbose)
         for feature in available_features:
             # compute the probability that the split happens
-            print(f'Analysis of the feature `{feature}`...')
+            _print(f'Analysis of the feature `{feature}`...', self.verbose)
             feature_id = self.features.index(feature)
             check_condition = [None for _ in self.features]
             for f in leaf.feature_subspace:
