@@ -1,19 +1,20 @@
 import numpy as np
+from environments.Environment import Environment
 
 
-class PricingEnvironment:
-    def __init__(self, conversion_rates, cost_per_click, n_clicks, tau):
-        self.conversion_rates = conversion_rates
-        self.cpc = cost_per_click
-        self.n_clicks = n_clicks
-        self.tau = tau
-
+class PricingEnvironment(Environment):
+    def __init__(self, bid_idx=3, mode='all', src='src/basic003.json'):
+        super().__init__(mode=mode, src=src)
+        self.n_clicks = np.rint(self.n_clicks[bid_idx]).astype(int)
+        self.cpc = self.cpc[bid_idx]
         self.collected_future_purchases = {}
         self.selected_arms = {}
         self.day = 0
 
+        print(f"Environment created with fixed bid: {self.bids[bid_idx]}")
+
     def round(self, pulled_arm):
-        outcome = np.random.binomial(1, self.conversion_rates[pulled_arm])
+        outcome = np.random.binomial(1, self.conv_rates[pulled_arm])
         if outcome != 0:
             p = self.tau[pulled_arm]/30
             single_future_purchases = np.random.binomial(30, p)

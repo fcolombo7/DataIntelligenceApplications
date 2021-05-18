@@ -26,7 +26,6 @@ class GPTS_Learner(Learner):
         self.gp = GaussianProcessRegressor(kernel=kernel, alpha=alpha**2, normalize_y=True, n_restarts_optimizer=9)
         
     def update_observations(self, arm_idx, rewards, cost):
-        norm_reward = (rewards - self.min_rew)/(self.max_rew - self.min_rew)
         reward = rewards['n_clicks'] * (rewards['conv_rates'] * rewards['margin'] * (1 + rewards['tau']) - rewards['cpc'])
         super().update_observations(arm_idx, reward, cost)
         self.ineligibility[arm_idx] = norm.cdf(0, self.means[arm_idx], self.sigmas[arm_idx])
