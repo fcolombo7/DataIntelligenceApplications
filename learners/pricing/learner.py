@@ -9,7 +9,7 @@ class Learner(ABC):
 
     LEARNER_NAME = 'ABSTRACT LEARNER'
 
-    def __init__(self, arm_values, period, next_purchases_update):
+    def __init__(self, arm_values, period=365, next_purchases_update='binomial'):
         """
         Class constructor
         :param arm_values: the action values of the arms that can be pulled

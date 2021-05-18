@@ -25,8 +25,9 @@ class GPTS_Learner(Learner):
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))
         self.gp = GaussianProcessRegressor(kernel=kernel, alpha=alpha**2, normalize_y=True, n_restarts_optimizer=9)
         
-    def update_observations(self, arm_idx, reward, cost):
-        norm_reward = (reward - self.min_rew)/(self.max_rew - self.min_rew) 
+    def update_observations(self, arm_idx, rewards, cost):
+        norm_reward = (rewards - self.min_rew)/(self.max_rew - self.min_rew)
+        reward = rewards['n_clicks'] * (rewards['conv_rates'] * rewards['margin'] * (1 + rewards['tau']) - rewards['cpc'])
         super().update_observations(arm_idx, reward, cost)
         self.ineligibility[arm_idx] = norm.cdf(0, self.means[arm_idx], self.sigmas[arm_idx])
         self.pulled_arms.append(self.arms[arm_idx])
@@ -39,8 +40,8 @@ class GPTS_Learner(Learner):
         self.means, self.sigmas = self.gp.predict(np.atleast_2d(self.arms).T, return_std=True)
         self.sigmas = np.maximum(self.sigmas, 1e-2)
         
-    def update(self, pulled_arm, reward, cost=-1):
-        self.update_observations(pulled_arm, reward, cost)
+    def update(self, pulled_arm, rewards, cost=-1):
+        self.update_observations(pulled_arm, rewards, cost)
         self.next_day()
         self.update_model()
         
