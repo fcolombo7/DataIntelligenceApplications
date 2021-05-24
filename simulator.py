@@ -3,6 +3,7 @@ import os
 import sys
 
 from data_generators.basic_generator import BasicDataGenerator
+from data_generators.standard_generator import StandardDataGenerator
 from utils.tasks.task3 import Task3
 from utils.tasks.task4 import Task4
 
@@ -10,10 +11,9 @@ from utils.tasks.task4 import Task4
 def task_builder(step, time_horizon, n_experiments, source=None, simulation_name=None):
     if source is None:
         source = 'src/basic001.json'
-    data_generator = BasicDataGenerator(source)
+    data_generator = StandardDataGenerator(source)
     if step == 3:
         description = 'Simulation of the step 3.'
-        task = None
         if simulation_name is None:
             task = Task3(data_generator, description=description)
         else:
@@ -21,8 +21,7 @@ def task_builder(step, time_horizon, n_experiments, source=None, simulation_name
         task.config(time_horizon=time_horizon, n_experiments=n_experiments)
         return task
     if step == 4:
-        description = 'Simulation of the step 3.'
-        task = None
+        description = 'Simulation of the step 4.'
         if simulation_name is None:
             task = Task4(data_generator, description=description)
         else:
