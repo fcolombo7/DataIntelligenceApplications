@@ -34,6 +34,16 @@ class Learner(ABC):
         self.next_purchases_observations = [[] for _ in range(self.n_arms)]
         self.next_purchases_update = next_purchases_update
 
+    def __str__(self):
+        num_samples = 0
+        for arm in range(self.n_arms):
+            num_samples += len(self.next_purchases_observations[arm])
+        s = f'{self.day=};\n' \
+            f'{self.next_purchases_estimation=};\n' \
+            f'num_samples={num_samples};\n' \
+            f'num_outcomes_per_arm={[len(self.outcome_per_arm[arm]) for arm in range(self.n_arms)]};\n'
+        return s
+
     def update_observations(self, pulled_arm, outcome, cost):
         """
         If cost == -1 the learner is solving a bidding related problem
