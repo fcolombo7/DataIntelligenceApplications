@@ -3,8 +3,8 @@ from environments.Environment import Environment
 
 
 class PricingEnvironment(Environment):
-    def __init__(self, bid_idx=3, mode='all', src='src/basic003.json'):
-        super().__init__(mode=mode, src=src)
+    def __init__(self, bid_idx=3, mode='all', src='src/basic003.json', generator='basic'):
+        super().__init__(mode=mode, src=src, generator=generator, bid=bid_idx)
         self.n_clicks = np.rint(self.n_clicks[bid_idx]).astype(int)
         self.cpc = self.cpc[bid_idx]
         self.collected_future_purchases = {}
