@@ -23,6 +23,7 @@ class ContextualEnvironment(Environment):
         self.collected_users_features = {}
         self.selected_arms = {}
         self.day = 0
+        self.collected_users_categories = {} ##ADDED BY flavio
 
     # todo: at first call get_user_features, then round [this is due to the cur.user update]
     def round(self, pulled_arm):
@@ -110,15 +111,23 @@ class ContextualEnvironment(Environment):
             self.daily_users_categories = np.random.choice(list(self.customer_classes.keys()),
                                                            size=self.daily_clicks,
                                                            p=self.customer_distributions).tolist()
+            
+
         elif mode == 'fixed':
             tmp = []
             for i, k in enumerate(self.customer_classes.keys()):
                 tmp += [k] * np.rint(self.class_clicks[i, self.selected_bid]).astype(int)
             self.daily_users_categories = np.array(tmp)
             np.random.shuffle(self.daily_users_categories)
+            self.daily_users_categories=self.daily_users_categories.tolist()
+            
 
         else:
             raise NotImplementedError
+        
+        self.collected_users_categories[self.day,"C1"] = self.daily_users_categories.count("C1")
+        self.collected_users_categories[self.day,"C2"] = self.daily_users_categories.count("C2")
+        self.collected_users_categories[self.day,"C3"] = self.daily_users_categories.count("C3")
 
         # DEBUG
         # print(f'#### DEBUG ENV (day: {self.day}) ####')
@@ -136,3 +145,5 @@ class ContextualEnvironment(Environment):
         cur_user_features = self.customer_classes[cur_user_category]['features']
         idx = np.random.choice(len(cur_user_features))
         return cur_user_features[idx]
+
+    
