@@ -1,4 +1,4 @@
-from learners.pricing.learner import Learner
+from learners.joint.learner_Joint import Learner
 import numpy as np
 
 
@@ -9,6 +9,13 @@ class ThompsonSampling(Learner):
     def __init__(self, arm_values, period=30, next_purchases_update='binomial'):
         super().__init__(arm_values, period, next_purchases_update)
         self.beta_parameters = np.ones((self.n_arms, 2))
+        
+    def __str__(self):
+        s = f'learner_type={self.LEARNER_NAME}\n'
+        s += super(ThompsonSampling, self).__str__()
+        opt = self.get_opt_arm_expected_value()
+        s += f'opt_arm_value: {opt[0]} [{opt[1]}]'
+        return s    
 
     def pull_arm(self) -> int:
         # TODO: mean, not parameter of the binomial

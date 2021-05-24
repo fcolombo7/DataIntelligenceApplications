@@ -1,13 +1,14 @@
-from learners.pricing.learner import Learner
+from learners.joint.learner_Joint import Learner
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 from scipy.stats import norm
 
+
 class GPTS_Learner(Learner):
     
     def __init__(self, arms):
-        super().__init__(arm_values=arms, period = 365, next_purchases_update = 'binomial')
+        super().__init__(arm_values=arms)
         self.arms = arms
         self.day = 0
         self.means = np.zeros(self.n_arms)
@@ -17,12 +18,14 @@ class GPTS_Learner(Learner):
         self.penalty = 0.8
         self.pulled_arms = []
         
-        
         alpha = 10.0
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))
         self.gp = GaussianProcessRegressor(kernel=kernel, alpha=alpha**2, normalize_y=True, n_restarts_optimizer=9)
         
-    def update_observations(self, arm_idx, reward, cost):
+    def update_observations(self, arm_idx, rewards, cost):
+        print(f'passed reward dictionary {rewards}' )
+        reward = rewards['n_clicks'] * (rewards['conv_rates'] * rewards['margin'] * (1 + rewards['tau']) - rewards['cpc'])
+        print(f'calculated reward {reward}')
         super().update_observations(arm_idx, reward, cost)
         self.ineligibility[arm_idx] = norm.cdf(0, self.means[arm_idx], self.sigmas[arm_idx])
         self.pulled_arms.append(self.arms[arm_idx])
@@ -35,9 +38,8 @@ class GPTS_Learner(Learner):
         self.means, self.sigmas = self.gp.predict(np.atleast_2d(self.arms).T, return_std=True)
         self.sigmas = np.maximum(self.sigmas, 1e-2)
         
-    def update(self, pulled_arm, sampled_n_clicks, sampled_cpc, margin, est_conv_rate, est_tau, cost=-1):
-        reward = sampled_n_clicks * (est_conv_rate * margin * (1 + est_tau) - sampled_cpc)
-        self.update_observations(pulled_arm, reward, cost)
+    def update(self, pulled_arm, rewards, cost=-1):
+        self.update_observations(pulled_arm, rewards, cost)
         self.next_day()
         self.update_model()
         
