@@ -31,14 +31,14 @@ class DataGenerator(ABC):
         pass
 
     @abstractmethod
-    def get_conversion_rates(self, mode='all'):
+    def get_conversion_rates(self, mode='all', **params):
         """ Get the conversion rates distribution. The output depends on the `mode`.
         [options: mode = all -> disjoint (default), mode = aggregate (aggregation performed as a weighted average]
         """
         pass
 
     @abstractmethod
-    def get_future_purchases(self, mode='all'):
+    def get_future_purchases(self, mode='all', **params):
         """ Get the distribution probability over the number of times the user will come back to the
         ecommerce website to buy another consumable item by 30 days after the first purchase (at the same price).
         The output depends on the `mode`.
@@ -56,7 +56,7 @@ class DataGenerator(ABC):
         pass
 
     @abstractmethod
-    def get_costs_per_click(self, mode='all'):
+    def get_costs_per_click(self, mode='all', **params):
         """ Get the probability distribution of the cost per click as a function of the bid.
         The output depends on the `mode`.
         [options: mode = all -> disjoint (default), mode = aggregate (aggregation performed as a weighted average]
@@ -66,4 +66,9 @@ class DataGenerator(ABC):
     @abstractmethod
     def get_source(self) -> str:
         """ Get the input filename. """
+        pass
+
+    @abstractmethod
+    def get_class_distributions(self, bid) -> []:
+        """ Get the distribution of the classes given the bid filename. """
         pass
