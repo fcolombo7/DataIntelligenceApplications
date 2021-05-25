@@ -115,7 +115,7 @@ class Task3(Task):
         self._print(f'ALGORITHMS: {[l.LEARNER_NAME for l in self.learners_to_test]}')
         self._print(f'\nSelected bid: {self.bids[self.selected_bid]}({self.selected_bid})')
         self._print(f'Fixed CPC: {self.fixed_cost}')
-        self._print(f'Fixed num_clicks: {self.n_clicks[self.selected_bid]} -> {self.fixed_n_clicks}\n')
+        self._print(f'Fixed num_clicks: {self.fixed_n_clicks}\n')
 
     def load(self, filename):
         super(Task3, self).load(filename)
