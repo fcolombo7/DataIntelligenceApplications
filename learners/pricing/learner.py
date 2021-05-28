@@ -38,8 +38,8 @@ class Learner(ABC):
         num_samples = 0
         for arm in range(self.n_arms):
             num_samples += len(self.next_purchases_observations[arm])
-        s = f'{self.day=};\n' \
-            f'{self.next_purchases_estimation=};\n' \
+        s = f'day={self.day};\n' \
+            f'next_purchases_estimation={self.next_purchases_estimation};\n' \
             f'num_samples={num_samples};\n' \
             f'num_outcomes_per_arm={[len(self.outcome_per_arm[arm]) for arm in range(self.n_arms)]};\n'
         return s

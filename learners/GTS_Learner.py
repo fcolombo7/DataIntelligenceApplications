@@ -22,8 +22,9 @@ class GTS_Learner(Learner):
         idx = np.argmax(sampled_values)
         return idx
     
-    def update(self, pulled_arm, reward):
+    def update(self, pulled_arm, rewards):
         self.t += 1
+        reward = rewards['n_clicks'] * (rewards['conv_rates'] * rewards['margin'] * (1 + rewards['tau']) - rewards['cpc'])
         self.update_observations(pulled_arm, reward)
         self.means[pulled_arm] = np.mean(self.rewards_per_arm[pulled_arm])
         

@@ -21,9 +21,10 @@ class Environment(ABC):
         self.prices = self.data_gen.get_prices()
         self.margins = self.data_gen.get_margins()
         self.n_clicks = self.data_gen.get_daily_clicks(mode=mode)
-        self.cpc = self.data_gen.get_costs_per_click(mode=mode, bid=bid)
-        self.conv_rates = self.data_gen.get_conversion_rates(mode=mode, bid=bid)
-        self.tau = self.data_gen.get_future_purchases(mode=mode, bid=bid)
+        if bid is not None:
+            self.cpc = self.data_gen.get_costs_per_click(mode=mode, bid=bid)
+            self.conv_rates = self.data_gen.get_conversion_rates(mode=mode, bid=bid)
+            self.tau = self.data_gen.get_future_purchases(mode=mode, bid=bid)
         self.features = self.data_gen.get_features()
         self.customer_classes = self.data_gen.get_classes()
 
