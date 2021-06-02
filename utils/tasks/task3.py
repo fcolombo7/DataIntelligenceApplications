@@ -66,11 +66,13 @@ class Task3(Task):
             for t in range(self.T):
                 for learner, env in test_instances:
                     learner.next_day()
-                    month_purchases = env.get_next_purchases_at_day(t, keep=False)
+
+                    past_arms = env.get_selected_arms_at_day(t - 30, keep=False, filter_purchases=True)
+                    month_purchases = env.get_next_purchases_at_day(t, keep=False, filter_purchases=True)
                     if month_purchases is not None:
-                        pulled_arms = env.get_selected_arms_at_day(t - 30, keep=False)
-                        for arm, n_purchases in zip(pulled_arms, month_purchases):
+                        for arm, n_purchases in zip(past_arms, month_purchases):
                             learner.update_single_future_purchase(arm, n_purchases)
+
                     pulled_arm = learner.pull_arm()
                     daily_reward = env.day_round(pulled_arm)
                     for outcome, cost in daily_reward:
@@ -135,7 +137,9 @@ class Task3(Task):
             plt.xlabel("Day")
             for val in self.result.values():
                 plt.plot(np.cumsum(self.aggr_opt - val))
-            plt.legend(self.result.keys())
+            plt.plot(4000 * np.sqrt(np.linspace(0, 364, 364)), '--')
+            labels = list(self.result.keys()) + ['sqrt(N)']
+            plt.legend(labels)
             plt.title("Cumulative regret")
             plt.show()
 

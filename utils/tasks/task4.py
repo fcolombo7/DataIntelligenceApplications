@@ -29,7 +29,7 @@ class Task4(Task):
         self.classes = data_generator.get_classes()
         self.conversion_rates = data_generator.get_conversion_rates(mode='all')
         self.future_purchases = data_generator.get_future_purchases(mode='all')
-        self.selected_bid = 3
+        self.selected_bid = 4
         self.number_of_clicks = data_generator.get_daily_clicks(mode='all')
         self.costs_per_click = data_generator.get_costs_per_click(mode='aggregate', bid=self.selected_bid)
         self.fixed_cost = self.costs_per_click[self.selected_bid]
@@ -80,12 +80,10 @@ class Task4(Task):
             for t in range(self.T):
                 for context_learner, env, context_generator in test_instances:
                     context_learner.next_day()
-                    past_arms = None
-                    past_features = None
-                    month_purchases = env.get_next_purchases_at_day(t, keep=False)
+                    past_arms = env.get_selected_arms_at_day(t - 30, keep=False, filter_purchases=True)
+                    past_features = env.get_collected_user_features_at_day(t - 30, keep=False, filter_purchases=True)
+                    month_purchases = env.get_next_purchases_at_day(t, keep=False, filter_purchases=True)
                     if month_purchases is not None:
-                        past_arms = env.get_selected_arms_at_day(t - 30, keep=False)
-                        past_features = env.get_collected_user_features_at_day(t - 30, keep=False)
                         context_learner.update_next_purchases(past_arms, month_purchases, past_features)
 
                     pulled_arms = context_learner.pull_arms()
@@ -95,7 +93,8 @@ class Task4(Task):
 
                     context_learner.update(daily_rewards, daily_pulled_arms, daily_users_features)
                     context_generator.collect_daily_data(daily_pulled_arms, daily_rewards, daily_users_features,
-                                                         next_purchases=month_purchases, past_pulled_arms=past_arms,
+                                                         next_purchases=month_purchases,
+                                                         past_pulled_arms=past_arms,
                                                          past_features=past_features)
 
             for learner, _, _ in test_instances:
@@ -194,7 +193,9 @@ class Task4(Task):
             plt.xlabel("Day")
             for val in self.result['rewards'].values():
                 plt.plot(np.cumsum(disaggr_opt - val))
-            plt.legend(self.result['rewards'].keys())
+            plt.plot(4000 * np.sqrt(np.linspace(0, 364, 364)), '--')
+            labels = list(self.result['rewards'].keys()) + ['sqrt(N)']
+            plt.legend(labels)
             plt.title("Cumulative regret")
             plt.show()
 

@@ -27,6 +27,9 @@ class TreeNode:
         self.base_learner: Learner = base_learner
         # dict[feature_name] = True/False
         self.feature_subspace: dict = {}
+        # print('##### CHILD ######')
+        # print(f'{self.feature_subspace=}')
+        # print(f'{self.base_learner}')
 
     def __str__(self):
         s = f'feature_subspace={self.feature_subspace} - is_leaf={self.is_leaf()}'
@@ -74,6 +77,10 @@ class TreeNode:
         assert splitting_feature in self.all_features and splitting_feature not in list(self.feature_subspace.keys()), \
             f"Cannot split the current node using `{splitting_feature}` as feature."
         # use deepcopy to get a child object that does not interfere with the parent one
+        # print('##### PARENT ######')
+        # print(f'{self.feature_subspace=}')
+        # print(f'{self.base_learner}')
+
         self.left_child = TreeNode(self.all_features, left_learner)
         self.left_child.feature_subspace = copy.deepcopy(self.feature_subspace)
         self.left_child.feature_subspace[splitting_feature] = False
@@ -149,12 +156,11 @@ class ContextGenerator:
             self.collected_rewards = rewards
         else:
             self.collected_rewards = np.vstack((self.collected_rewards, rewards))
-        # self.collected_rewards = np.append(self.collected_rewards, rewards)
         if self.collected_features is None:
             self.collected_features = features
         else:
             self.collected_features = np.vstack((self.collected_features, features))
-        # self.collected_features = np.append(self.collected_features, features)
+
         if next_purchases is not None:
             self.collected_next_purchases = np.append(self.collected_next_purchases, next_purchases)
         if past_pulled_arms is not None:
@@ -200,8 +206,8 @@ class ContextGenerator:
         before_learner = leaf.base_learner
         value_before = self._compute_lower_bound(before_learner.get_opt_arm_expected_value()[0],
                                                  len(before_learner.collected_rewards))
-        _print(f'\tValues after the split: {values_after_split}', self.verbose)
-        _print(f'\tValue before the split: {value_before}\n', self.verbose)
+        #_print(f'\tValues after the split: {values_after_split}', self.verbose)
+        #_print(f'\tValue before the split: {value_before}\n', self.verbose)
         if value_before < max_value:
             best_feature = features[idx]
             # there is a feature for which it is worth to split
@@ -229,9 +235,10 @@ class ContextGenerator:
         _print(f'\nFeatures to check: {available_features}', self.verbose)
         for feature in available_features:
             # compute the probability that the split happens
-            _print(f'Analysis of the feature `{feature}`...', self.verbose)
+            _print(f'\nAnalysis of the feature `{feature}`...', self.verbose)
             feature_id = self.features.index(feature)
             check_condition = [None for _ in self.features]
+            # print(f'{check_condition=} - {len(check_condition)=}')
             for f in leaf.feature_subspace:
                 check_condition[self.features.index(f)] = leaf.feature_subspace[f]
             # here all the indices of the values compliant with the current feature space
@@ -259,6 +266,8 @@ class ContextGenerator:
 
             # GREEDY ALGORITHM.
             # print(f'{len(left_split_indices)=}, {len(right_split_indices)=}, {len(indices)=} [tot data: {len(self.collected_rewards)}]')
+            # print(f'{left_split_indices=},\n{right_split_indices=},\n{indices=}')
+            assert len(set(left_split_indices).union(set(right_split_indices)).difference(set(indices))) == 0
             left_split_probability = len(left_split_indices) / len(indices)
             right_split_probability = 1.0 - left_split_probability
 
@@ -290,7 +299,6 @@ class ContextGenerator:
             values_after_split.append(value_after)
             right_learners.append(right_learner)
             left_learners.append(left_learner)
-
         return available_features, values_after_split, right_learners, left_learners
 
     def _update_contextual_learner(self):
@@ -322,10 +330,14 @@ class ContextGenerator:
         """
         learner = self.contextual_learner.get_root_learner()
         # print(f'Training a new learner with {len(pulled_arms)} observations.')
+        # print(f'{len(pulled_arms)=} - {len(rewards)=} - {len(costs)=}')
+        # print(f'{pulled_arms=}\n\n{rewards=}\n\n{costs=}')
         for a, r, c in zip(pulled_arms, rewards, costs):
             # print(a, r, c)
             learner.update(a, r, c)
         # update the estimation of the ext purchase distribution
+        counter = 0
+        # print(f'{len(self.collected_next_purchases)=} - {len(self.collected_past_features)=} - {len(self.collected_past_pulled_arms)=}')
         for i, purchases in enumerate(self.collected_next_purchases):
             update = True
             for f in subspace.keys():
@@ -335,8 +347,9 @@ class ContextGenerator:
                     break
             if update:
                 # print(f'{self.collected_past_pulled_arms[i]=}, {purchases=}')
+                counter += 1
                 learner.update_single_future_purchase(self.collected_past_pulled_arms[i], purchases)
-
+        # print(f'next_purch_counter = {counter}')
         return learner
 
     def _log(self, leaf):

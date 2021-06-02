@@ -58,8 +58,10 @@ class ContextualLearner:
         """
         leaves = self.context_tree.get_leaves()
         # scan the data received by the environment and update the proper learner according to the context
+        # print(len(pulled_arms_data), len(next_purchases_data), len(features_data))
         for i, obs in enumerate(next_purchases_data):
             # i -> index used to scan the data received by the environment
+            # print(i, obs)
             update_done = False
             for leaf in leaves:
                 leaf_subspace = leaf.feature_subspace
@@ -105,8 +107,8 @@ class ContextualLearner:
                         break
                 if good_leaf:
                     leaf.base_learner.update(pulled_arms[i], obs[0], obs[1])
-                    if len(leaf.feature_subspace.keys()) != 0:
-                        print(f'#{i}: [{user_features[i]}] -> {leaf.feature_subspace}')
+                    # if len(leaf.feature_subspace.keys()) != 0:
+                        # print(f'#{i}: [{user_features[i]}] -> {leaf.feature_subspace}')
                     update_done = True
                     break
             if not update_done:
