@@ -59,7 +59,6 @@ class ContextualEnvironment(Environment):
             cur_user_category = self.daily_users_categories[i]
             # get the current user features and store them to future use (when the next purchases are retrieved)
             cur_user_features = self.get_daily_user_features(i)
-            # self.daily_users_features.append(cur_user_features)
             # cur_user_category is the index 'C1'
             self.cur_category_id = list(self.customer_classes.keys()).index(cur_user_category)
             # now determine which is the arm to pull according to the context received by the learner
@@ -81,8 +80,6 @@ class ContextualEnvironment(Environment):
             self.selected_arms[self.day].append(pulled_arm)
             self.collected_users_features[self.day].append(cur_user_features)
 
-        # save all the features of all the users
-        # self.collected_users_features[self.day] = self.daily_users_features
         # increment the day counter
         self.day += 1
         # set the default daily categories/features

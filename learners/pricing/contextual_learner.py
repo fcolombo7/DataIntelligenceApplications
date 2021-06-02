@@ -58,10 +58,8 @@ class ContextualLearner:
         """
         leaves = self.context_tree.get_leaves()
         # scan the data received by the environment and update the proper learner according to the context
-        # print(len(pulled_arms_data), len(next_purchases_data), len(features_data))
         for i, obs in enumerate(next_purchases_data):
             # i -> index used to scan the data received by the environment
-            # print(i, obs)
             update_done = False
             for leaf in leaves:
                 leaf_subspace = leaf.feature_subspace
@@ -74,7 +72,6 @@ class ContextualLearner:
                 if good_leaf:
                     leaf.base_learner.update_single_future_purchase(pulled_arms_data[i], obs)
                     update_done = True
-                    # print(f'next purch: {pulled_arms_data[i]}, {obs}')
                     break
             if not update_done:
                 raise AttributeError
@@ -107,8 +104,6 @@ class ContextualLearner:
                         break
                 if good_leaf:
                     leaf.base_learner.update(pulled_arms[i], obs[0], obs[1])
-                    # if len(leaf.feature_subspace.keys()) != 0:
-                        # print(f'#{i}: [{user_features[i]}] -> {leaf.feature_subspace}')
                     update_done = True
                     break
             if not update_done:
@@ -116,8 +111,6 @@ class ContextualLearner:
 
     def get_daily_rewards(self):
         rew = self.context_tree.get_daily_rewards()
-        # print(rew)
-        # print(f'daily rew length: {len(rew)}')
         return rew
 
     def get_splits_count(self):

@@ -10,7 +10,7 @@ from environments.contextual_environment import ContextualEnvironment
 from learners.pricing.contextual_learner import ContextualLearner
 from learners.pricing.thompson_sampling import ThompsonSampling
 from learners.pricing.ucb import UCB
-from utils.context_generator_v2 import ContextGenerator
+from utils.context_generator import ContextGenerator
 from utils.tasks.task import Task
 
 

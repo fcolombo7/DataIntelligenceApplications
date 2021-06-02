@@ -5,6 +5,11 @@ from learners.pricing.contextual_learner import ContextualLearner
 from learners.pricing.learner import Learner
 
 
+def _print(text, verbose):
+    if verbose > 0:
+        print(text)
+
+
 class TreeNode:
     """
     class representing the single node of the Context Tree
@@ -20,14 +25,11 @@ class TreeNode:
         self.right_child: TreeNode = None
         self.all_features: dict = all_features
         self.base_learner: Learner = base_learner
-        # todo: option1 --- dictionary where the keys are the features already expanded at the current node.
-        #  dict[feature_name] = True/False
+        # dict[feature_name] = True/False
         self.feature_subspace: dict = {}
 
     def __str__(self):
-        # f'all_features{self.all_features}\n' \
-        s = f'feature_subspace={self.feature_subspace} - ' \
-            f'is_leaf={self.is_leaf()}'
+        s = f'feature_subspace={self.feature_subspace} - is_leaf={self.is_leaf()}'
         return s
 
     def is_leaf(self) -> bool:
@@ -54,6 +56,7 @@ class TreeNode:
         return left_leaves + right_leaves
 
     def get_daily_rewards(self):
+        """ Recursive method that returns the leaves of the tree. """
         reward = np.append(np.array([]), self.base_learner.daily_collected_rewards)
         if not self.is_leaf():
             children_rewards = self.left_child.get_daily_rewards() + self.right_child.get_daily_rewards()
@@ -71,10 +74,6 @@ class TreeNode:
         assert splitting_feature in self.all_features and splitting_feature not in list(self.feature_subspace.keys()), \
             f"Cannot split the current node using `{splitting_feature}` as feature."
         # use deepcopy to get a child object that does not interfere with the parent one
-        # TODO: HOW TO DEAL WITH THE ESTIMATION OF THE NEXT PURCHASE ? Already done in the context generator.
-        # left_learner.set_next_purchases_data(self.base_learner.get_next_purchases_data())
-        # right_learner.set_next_purchases_data(self.base_learner.get_next_purchases_data())
-        # left node --> feature = False
         self.left_child = TreeNode(self.all_features, left_learner)
         self.left_child.feature_subspace = copy.deepcopy(self.feature_subspace)
         self.left_child.feature_subspace[splitting_feature] = False
@@ -82,9 +81,8 @@ class TreeNode:
         self.right_child = TreeNode(self.all_features, right_learner)
         self.right_child.feature_subspace = copy.deepcopy(self.feature_subspace)
         self.right_child.feature_subspace[splitting_feature] = True
-        # todo: ???
+        # collect the daily reward of the parent node to effectively count in the overall reward
         self.base_learner.next_day()
-        print(f'NEW CONTEXT GENERATED:\n splitting into -> {self.left_child.feature_subspace} and {self.right_child.feature_subspace}')
 
 
 class ContextGenerator:
@@ -93,7 +91,8 @@ class ContextGenerator:
     determines how and when it is worth to generate a new Context.
     """
 
-    def __init__(self, features: [], contextual_learner: ContextualLearner, update_frequency: int, start_from: int, confidence: float):
+    def __init__(self, features: [], contextual_learner: ContextualLearner, update_frequency: int, start_from: int,
+                 confidence: float, verbose=1):
         """
         Class constructor
         :param features: all the features considered.
@@ -102,12 +101,12 @@ class ContextGenerator:
         :param update_frequency: frequency at which the context generation checks the data and run its generation algorithm.
         :param confidence: parameters used to determine the lower bound.
         """
+        self.verbose = verbose
         self.features = features
         self.collected_arms = np.array([], dtype=np.int)
         self.collected_rewards = None
         self.collected_features = None
 
-        # TODO: HEREEE hope this can be useless...
         self.collected_next_purchases = np.array([], dtype=np.int)
         self.collected_past_pulled_arms = np.array([], dtype=np.int)
         self.collected_past_features = []
@@ -122,14 +121,27 @@ class ContextGenerator:
         self.context_tree = TreeNode(features, self.contextual_learner.get_root_learner())
         self._update_contextual_learner()
 
+        self.metadata = {
+            'START_FROM': start_from,
+            'FREQUENCY': update_frequency,
+            'CONFIDENCE': confidence,
+            'SPLIT_FEATURES': [],
+            'SPLIT_DAYS': [],
+            'LOG': '',
+        }
+
     # TODO: HERE!!!!
     def collect_daily_data(self, pulled_arms, rewards, features,
                            next_purchases=None, past_pulled_arms=None, past_features=None):
         """
         Collect the data produced by the environment in one day
-        :param pulled_arms:
-        :param rewards:
-        :param features:
+        :param pulled_arms: arms that are pulled at day t
+        :param rewards: rewards collected at day t
+        :param features: features of the users that play an arm at day t
+        :param next_purchases: data about the number of times a user bought again the item in the past 30 days,
+                               after the first purchase
+        :param past_features: data about the users that pulled arms 30 days before.
+        :param past_pulled_arms: data about the arms that was pulled 30 days before.
         """
         self.collected_arms = np.append(self.collected_arms, pulled_arms)
         # up to now it is a pair outcome - cost
@@ -137,40 +149,21 @@ class ContextGenerator:
             self.collected_rewards = rewards
         else:
             self.collected_rewards = np.vstack((self.collected_rewards, rewards))
-        # self.collected_rewards = np.append(self.collected_rewards, rewards)
         if self.collected_features is None:
             self.collected_features = features
         else:
             self.collected_features = np.vstack((self.collected_features, features))
-        # self.collected_features = np.append(self.collected_features, features)
+
         if next_purchases is not None:
             self.collected_next_purchases = np.append(self.collected_next_purchases, next_purchases)
-            """
-            if self.collected_next_purchases is None:
-                self.collected_next_purchases = next_purchases
-            else:
-                self.collected_next_purchases = np.vstack((self.collected_next_purchases, next_purchases))
-            """
         if past_pulled_arms is not None:
             self.collected_past_pulled_arms = np.append(self.collected_past_pulled_arms, past_pulled_arms)
-            """
-            if self.collected_past_pulled_arms is None:
-                self.collected_past_pulled_arms = past_pulled_arms
-            else:
-                self.collected_past_pulled_arms = np.vstack((self.collected_past_pulled_arms, past_pulled_arms))
-            """
         if past_features is not None:
             self.collected_past_features = self.collected_past_features + past_features
-            """
-            if self.collected_past_features is None:
-                self.collected_past_features = past_features
-            else:
-                self.collected_past_features = self.collected_past_features + past_features
-            """
-        self.context_generation()
+        self._context_generation()
         self.t += 1
 
-    def context_generation(self):
+    def _context_generation(self):
         """
         Algorithm that evaluates the possibility of generating a new context.
         """
@@ -184,8 +177,8 @@ class ContextGenerator:
         if len(leaves) == 0:
             return
         # check if it is worth to split the leaves
-        print(f'\n{"-"*20} RUNNING CONTEXT GENERATOR@t={self.t} {"-"*20}')
-        print(f'N_LEAVES: {len(leaves)}')
+        _print(f'\n{"-"*20} RUNNING CONTEXT GENERATOR@t={self.t} {"-"*20}', self.verbose)
+        _print(f'N_LEAVES: {len(leaves)}', self.verbose)
         for leaf in leaves:
             self._evaluate_split(leaf)  # for each leaf evaluate if it is worth to split
 
@@ -194,7 +187,7 @@ class ContextGenerator:
         Check is the leaf can be split.
         :param leaf: leaf to split.
         """
-        print(f"- Evaluating the Node: {leaf}")
+        _print(f"- Evaluating the Node: {leaf}", self.verbose)
 
         best_feature = None
         features, values_after_split, right_learners, left_learners = self._iterate_over_features(leaf)
@@ -206,13 +199,18 @@ class ContextGenerator:
         before_learner = leaf.base_learner
         value_before = self._compute_lower_bound(before_learner.get_opt_arm_expected_value()[0],
                                                  len(before_learner.collected_rewards))
-        print(f'\tValues after the split: {values_after_split}')
-        print(f'\tValue before the split: {value_before}\n')
+        _print(f'\tValues after the split: {values_after_split}', self.verbose)
+        _print(f'\tValue before the split: {value_before}\n', self.verbose)
         if value_before < max_value:
             best_feature = features[idx]
             # there is a feature for which it is worth to split
-            print(f'\t{best_feature=}')
+            _print(f'\t{best_feature=}', self.verbose)
             leaf.split(best_feature, left_learners[idx], right_learners[idx])
+            _print(f'NEW CONTEXT GENERATED:\n splitting into -> {leaf.left_child.feature_subspace} and {leaf.right_child.feature_subspace}', self.verbose)
+            self.metadata['SPLIT_DAYS'].append(self.t)
+            s = str(leaf.feature_subspace) + ' -> ' + best_feature
+            self.metadata['SPLIT_FEATURES'].append(s)
+            self._log(leaf)
             self._update_contextual_learner()
 
     def _iterate_over_features(self, leaf):
@@ -227,22 +225,21 @@ class ContextGenerator:
         left_learners = []
         # get the features that are not expanded
         available_features = list(set(leaf.all_features) - set(leaf.feature_subspace.keys()))
-        print(f'\nFeatures to check: {available_features}')
+        _print(f'\nFeatures to check: {available_features}', self.verbose)
         for feature in available_features:
             # compute the probability that the split happens
-            print(f'Analysis of the feature `{feature}`...')
+            _print(f'\nAnalysis of the feature `{feature}`...', self.verbose)
             feature_id = self.features.index(feature)
             check_condition = [None for _ in self.features]
+            # print(f'{check_condition=} - {len(check_condition)=}')
             for f in leaf.feature_subspace:
                 check_condition[self.features.index(f)] = leaf.feature_subspace[f]
             # here all the indices of the values compliant with the current feature space
             indices = []
             left_split_indices = []
             right_split_indices = []
-            # print(f'{check_condition=}')
             # collect the indices of the samples that are compliant with the selected feature
             for idx, collected_feature in enumerate(self.collected_features):
-                # print(f'CIAO!  {idx=}, {collected_feature[0]}-{collected_feature[1]}')
                 cond = True
                 i = 0
                 while cond and i < len(check_condition):
@@ -260,27 +257,23 @@ class ContextGenerator:
                         right_split_indices.append(idx)
 
             # GREEDY ALGORITHM.
-            # print(f'{len(left_split_indices)=}, {len(right_split_indices)=}, {len(indices)=} [tot data: {len(self.collected_rewards)}]')
+            assert len(set(left_split_indices).union(set(right_split_indices)).difference(set(indices))) == 0
             left_split_probability = len(left_split_indices) / len(indices)
             right_split_probability = 1.0 - left_split_probability
+
+            # get the left and right learners, trained with the data collected up to now
+            left_subspace = copy.deepcopy(leaf.feature_subspace)
+            right_subspace = copy.deepcopy(leaf.feature_subspace)
+            left_subspace[feature] = False
+            right_subspace[feature] = True
             left_learner = self._get_offline_trained_lerner(pulled_arms=self.collected_arms[left_split_indices],
                                                             rewards=self.collected_rewards[left_split_indices, 0],
-                                                            costs=self.collected_rewards[left_split_indices, 1])
+                                                            costs=self.collected_rewards[left_split_indices, 1],
+                                                            subspace=left_subspace)
             right_learner = self._get_offline_trained_lerner(pulled_arms=self.collected_arms[right_split_indices],
                                                              rewards=self.collected_rewards[right_split_indices, 0],
-                                                             costs=self.collected_rewards[right_split_indices, 1])
-            # update the learners with the data collected about the next purchases
-            # left_subspace = copy.deepcopy(leaf.feature_subspace)
-            # right_subspace = copy.deepcopy(leaf.feature_subspace)
-            # left_subspace[feature] = False
-            # right_subspace[feature] = True
-            # self._offline_update_next_purchases(left_learner, left_subspace)
-            # self._offline_update_next_purchases(left_learner, right_subspace)
-
-            estimation, observations, update_mode = leaf.base_learner.get_next_purchases_data()
-            left_learner.set_next_purchases_data(estimation, observations, update_mode)
-            right_learner.set_next_purchases_data(estimation, observations, update_mode)
-            # compute the values after the split
+                                                             costs=self.collected_rewards[right_split_indices, 1],
+                                                             subspace=right_subspace)
             left_value = left_learner.get_opt_arm_expected_value()[0]
             right_value = right_learner.get_opt_arm_expected_value()[0]
             value_after = self._compute_lower_bound(left_split_probability, len(left_split_indices)) * \
@@ -288,12 +281,9 @@ class ContextGenerator:
                           self._compute_lower_bound(right_split_probability, len(right_split_indices)) * \
                           self._compute_lower_bound(right_value, len(right_learner.collected_rewards))
 
-            # print(f'  * {feature}: p_L={left_split_probability}, v_L={left_value} - p_R={right_split_probability}, v_R={right_value}')
-            # print(f' --> {value_after=}\n')
             values_after_split.append(value_after)
             right_learners.append(right_learner)
             left_learners.append(left_learner)
-
         return available_features, values_after_split, right_learners, left_learners
 
     def _update_contextual_learner(self):
@@ -311,25 +301,23 @@ class ContextGenerator:
         if n_samples == 0:
             return -np.inf
         ret_value = mean - np.sqrt(-np.log(self.confidence) / (2 * n_samples))
-        # print(f'{mean=}, {n_samples=} => lower_bound={ret_value}')
         return ret_value
 
-    def _get_offline_trained_lerner(self, pulled_arms, rewards, costs):
+    def _get_offline_trained_lerner(self, pulled_arms, rewards, costs, subspace):
         """
         Train a new learner to be set as base learner of a new context
         :param pulled_arms: history of pulled arms
         :param rewards: history of rewards received by the environment
         :param costs: history of received costs
+        :param subspace: feature subspace of the learner
         :return:
         """
         learner = self.contextual_learner.get_root_learner()
-        # print(f'Training a new learner with {len(pulled_arms)} observations.')
-        for a, r, c in zip(pulled_arms, rewards, costs):
-            # print(a, r, c)
-            learner.update(a, r, c)
-        return learner
 
-    def _offline_update_next_purchases(self, learner, subspace):
+        for a, r, c in zip(pulled_arms, rewards, costs):
+            learner.update(a, r, c)
+        # update the estimation of the ext purchase distribution
+        counter = 0
         for i, purchases in enumerate(self.collected_next_purchases):
             update = True
             for f in subspace.keys():
@@ -338,5 +326,20 @@ class ContextGenerator:
                     update = False
                     break
             if update:
-                # print(f'{self.collected_past_pulled_arms[i]=}, {purchases=}')
+                counter += 1
                 learner.update_single_future_purchase(self.collected_past_pulled_arms[i], purchases)
+        return learner
+
+    def _log(self, leaf):
+        s = '\n'+15*'*'+f' SPLIT@day={self.t} '+15*'*'+'\n'
+        s += f'{leaf.feature_subspace} -> {leaf.left_child.feature_subspace} AND {leaf.right_child.feature_subspace}\n'
+        s += f'COLLECTED DATA:\n' \
+             f'{self.collected_arms=}\n' \
+             f'{self.collected_rewards=}\n' \
+             f'{self.collected_features=}\n' \
+             f'{self.collected_next_purchases=}\n' \
+             f'{self.collected_past_pulled_arms=}\n' \
+             f'{self.collected_past_features=}\n'
+        s += f'{leaf.left_child.base_learner.daily_collected_rewards=}\n' \
+             f'{leaf.left_child.base_learner.next_purchases_estimation=}\n'
+        self.metadata['LOG'] += s
