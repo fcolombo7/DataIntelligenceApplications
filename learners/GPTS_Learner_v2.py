@@ -24,9 +24,6 @@ class GPTS_Learner(Learner):
     def update_observations(self, arm_idx, rewards, cost):
         reward = rewards['n_clicks'] * (
                     rewards['conv_rates'] * rewards['margin'] * (1 + rewards['tau']) - rewards['cpc'])
-        if (reward / rewards['n_clicks'] < 1):
-            print(f'Info: {reward}')
-            print(rewards)
         super().update_observations(arm_idx, reward, cost)
         self.ineligibility = norm.cdf(0, self.means, self.sigmas)
         self.pulled_arms.append(self.arms[arm_idx])
@@ -47,7 +44,6 @@ class GPTS_Learner(Learner):
     def pull_arm(self):
         if self.day < 10:
             arm = np.random.choice(self.n_arms)
-            print(f'arm = {arm}; ' + f'mean = {self.means[arm]}; ' + f'variance = {self.sigmas[arm]}')
             return arm
         sampled_values = np.random.normal(self.means, self.sigmas)
         sampled_values[self.ineligibility > self.negative_threshold] = 0
