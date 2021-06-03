@@ -1,16 +1,30 @@
 import numpy as np
 from environments.Environment import Environment
+from data_generators.basic_generator import BasicDataGenerator
 
 
 class JointEnvironment(Environment):
-    def __init__(self, bid_idx=3, mode='all', src='src/basic003.json'):
-        super().__init__(mode=mode, src=src)
-        self.bid_idx = bid_idx
-#        self.n_clicks = np.rint(self.n_clicks[bid_idx]).astype(int)
-#        self.cpc = self.cpc[bid_idx]
+    def __init__(self, mode='all', src='src/basic003.json', generator='standard'):
+        super().__init__(mode=mode, src=src, generator=generator)
+        self.mode = mode
+        self.bids_arms = len(self.bids)
         self.collected_future_purchases = {}
         self.selected_arms = {}
         self.day = 0
+        
+        data_gen = BasicDataGenerator(filename=src)
+        self.conv_rates = data_gen.get_conversion_rates(mode='aggregate') #??
+        self.cpc = data_gen.get_costs_per_click(mode='aggregate') #??
+        self.tau = data_gen.get_future_purchases(mode='aggregate') #??
+        self.n_clicks = data_gen.get_daily_clicks(mode='aggregate') #??
+        self.margins = data_gen.get_margins()
+        print(print(15*'-','DATA IN ENV', '-'*15))
+        print(f'conv_rates = {self.conv_rates}')
+        print(f'taus = {self.tau}')
+        print(f'cpc = {self.cpc}')
+        print(f'n_clicks={self.n_clicks}')
+        print(f'margins={self.margins}')
+
         self.__compute_expected_rewards__()
         
         
@@ -42,9 +56,12 @@ class JointEnvironment(Environment):
         rewards = {}
         sample_n_clicks = np.random.normal(self.n_clicks[pulled_arm], abs(self.n_clicks[pulled_arm]/100))
         sample_cpc = np.random.normal(self.cpc[pulled_arm], abs(self.cpc[pulled_arm]/100))
+        
 
         rewards['n_clicks'] = sample_n_clicks
         rewards['cpc'] = sample_cpc
+        
+        ##REMOVE?
         rewards['margin'] = self.margins
         rewards['tau'] = self.tau
         rewards['conv_rates'] = self.conv_rates
@@ -76,5 +93,12 @@ class JointEnvironment(Environment):
         return np.argmax(self.expected_rewards)
         
     def expected_rew(self):
-        return self.expected_rewards            
-    
+        return self.expected_rewards           
+        
+    def __update_parameters(self, pulled_arm):
+        self.conv_rates = self.data_gen.get_conversion_rates(mode=self.mode, bid=pulled_arm)
+        print(f'conv_rates = {self.conv_rates}')
+        self.tau = self.data_gen.get_future_purchases(mode=self.mode, bid=pulled_arm)
+        self.cpc = self.data_gen.get_costs_per_click(mode=self.mode, bid=pulled_arm)
+        print(f'taus = {self.tau}')
+        print(f'cpc = {self.cpc}')
