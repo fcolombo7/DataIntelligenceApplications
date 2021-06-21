@@ -110,7 +110,7 @@ class Task4(Task):
                learner_to_test=None,
                cg_start_from=31,
                cg_frequency=10,
-               cg_confidence=0.01,
+               cg_confidence=0.002,
                verbose=1) -> None:
         if learner_to_test is None:
             learner_to_test = [UCB, ThompsonSampling]
