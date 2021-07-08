@@ -3,8 +3,7 @@ import numpy as np
 
 
 class ThompsonSampling(Learner):
-
-    LEARNER_NAME = 'TS-Pricing'
+    LEARNER_NAME = 'TS'
 
     def __init__(self, arm_values, period=30, next_purchases_update='binomial'):
         super().__init__(arm_values, period, next_purchases_update)

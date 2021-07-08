@@ -6,6 +6,7 @@ from scipy.stats import norm
 
 
 class GPTS_Learner(Learner):
+    LEARNER_NAME = "GPTS"
 
     def __init__(self, arms):
         super().__init__(arm_values=arms)

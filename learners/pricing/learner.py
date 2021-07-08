@@ -41,8 +41,8 @@ class Learner(ABC):
         s = f'day={self.day};\n' \
             f'next_purchases_estimation={self.next_purchases_estimation};\n' \
             f'num_samples={num_samples};\n' \
-            f'num_outcomes_per_arm={[len(self.outcome_per_arm[arm]) for arm in range(self.n_arms)]};\n' \
-            f'{self.daily_collected_rewards=}'
+            f'num_outcomes_per_arm={[len(self.outcome_per_arm[arm]) for arm in range(self.n_arms)]};\n'
+            #f'{self.daily_collected_rewards=}'
         return s
 
     def update_observations(self, pulled_arm, outcome, cost):

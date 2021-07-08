@@ -3,7 +3,7 @@ import numpy as np
 
 
 class UCB(Learner):
-    LEARNER_NAME = 'UCB-Pricing'
+    LEARNER_NAME = 'UCB'
 
     def __init__(self, arm_values, period=30, next_purchases_update='binomial'):
         super().__init__(arm_values, period, next_purchases_update)
