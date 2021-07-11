@@ -16,9 +16,10 @@ class GPTS_Learner(Learner):
         self.ineligibility = np.ones(self.n_arms)
         self.negative_threshold = 0.2
         self.pulled_arms = []
+        print(self.t)
 
         alpha = 40.0
-        kernel = C(1.0, (1e-3, 1e5)) * RBF(1.0, (1e-3, 1e5))
+        kernel = C(1.0, (1e-2, 1e5)) * RBF(1.0, (1e-2, 1e5))
         self.gp = GaussianProcessRegressor(kernel=kernel, alpha=alpha ** 2, normalize_y=True, n_restarts_optimizer=9)
 
     def update_observations(self, arm_idx, rewards, cost):
@@ -42,7 +43,8 @@ class GPTS_Learner(Learner):
     def update(self, pulled_arm, rewards, cost=-1):
         self.update_observations(pulled_arm, rewards, cost)
         self.next_day()
-        self.update_model()
+        if(self.day > 30):
+            self.update_model()
 
     def pull_arm(self):
         if self.day < 10:

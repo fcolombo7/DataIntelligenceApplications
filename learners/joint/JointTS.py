@@ -19,8 +19,9 @@ class JointTS(Learner):
 
     def update(self, pulled_arm, outcome, cost):
         self.t += 1
-        self.beta_parameters[pulled_arm, 0] = self.beta_parameters[pulled_arm, 0] + outcome
-        self.beta_parameters[pulled_arm, 1] = self.beta_parameters[pulled_arm, 1] + 1.0 - outcome
+        if(self.t > 30):
+            self.beta_parameters[pulled_arm, 0] = self.beta_parameters[pulled_arm, 0] + outcome
+            self.beta_parameters[pulled_arm, 1] = self.beta_parameters[pulled_arm, 1] + 1.0 - outcome
         self.update_observations(pulled_arm, outcome, cost)
 
     def get_opt_arm_expected_value(self) -> (float, int):
