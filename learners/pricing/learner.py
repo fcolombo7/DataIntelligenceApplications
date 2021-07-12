@@ -122,24 +122,3 @@ class Learner(ABC):
             :param cost:
             """
         pass
-
-
-
-"""
-def update_future_purchases(self, pulled_arm, daily_future_obs): # todo: check the step 3, probably can be changed and this method can be removed
-    if self.next_purchases_update == 'binomial':
-        for ob in daily_future_obs:
-            self.__binomial_update(pulled_arm, ob)
-            self.next_purchases_observations[pulled_arm].append(ob)
-    else:
-        raise NotImplementedError()
-"""
-"""   
-    def daily_update(self, pulled_arm, daily_rew):
-        # TODO: mean, not the parameter of the binomial -->
-        #  r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]*self.period) - daily_rew[:, 1]
-        r = daily_rew[:, 0] * self.arm_values[pulled_arm] * (1 + self.next_purchases_estimation[pulled_arm]) - daily_rew[:, 1]
-        self.daily_collected_rewards = np.append(self.daily_collected_rewards, np.sum(r))
-        for outcome, cost in daily_rew:
-            self.update(pulled_arm, outcome, cost)
-    """

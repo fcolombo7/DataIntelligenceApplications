@@ -18,7 +18,6 @@ class JointLearner:
         self.bids = bid_values
         self.pricing_bandit = pricing_bandit_class(self.margins)
         self.adv_bandit = adv_bandit_class(self.bids)
-        # self.LEARNER_NAME = self.LEARNER_NAME + self.adv_bandit.LEARNER_NAME + '-' + self.pricing_bandit.LEARNER_NAME
         self.sel_bid = None
         self.sel_price = None
         self.discovery = True
@@ -35,14 +34,21 @@ class JointLearner:
     def update(self, pulled_price, outcome, cost):
         self.pricing_bandit.update(pulled_price, outcome, cost)
 
+    def get_adv_params(self, n_clicks, cpc):
+        self.n_clicks = n_clicks
+        self.cpc = cpc
+
     def next_day(self):
         self.pricing_bandit.next_day()
         if self.pricing_bandit.day > 0:
-            today_reward = self.pricing_bandit.daily_collected_rewards[-1]
-            self.adv_bandit.daily_collected_rewards = np.append(self.adv_bandit.daily_collected_rewards, today_reward)
-            self.adv_bandit.ineligibility = norm.cdf(0, self.adv_bandit.means, self.adv_bandit.sigmas)
-            self.adv_bandit.pulled_arms.append(self.bids[self.sel_bid])
-            self.adv_bandit.update_model()
+            params = {
+                'n_clicks': self.n_clicks,
+                'cpc': self.cpc,
+                'tau': self.pricing_bandit.next_purchases_estimation[self.sel_price],
+                'margin': self.margins[self.sel_price],
+                'conv_rates': self.pricing_bandit.get_estimated_conv_rates()[self.sel_price] #TODO: DA SISTEAMRE ANCHE I PUNTI PRECEDENTI
+            }
+            self.adv_bandit.update(self.sel_bid, params)
 
     # TODO: check all this methods
     # other methods to ensure compatibility with the simulations

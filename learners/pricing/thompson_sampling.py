@@ -33,3 +33,7 @@ class ThompsonSampling(Learner):
         mean_values = self.beta_parameters[:, 0] / (self.beta_parameters[:, 0] + self.beta_parameters[:, 1])
         factor = self.arm_values * (1 + self.next_purchases_estimation)
         return np.max(mean_values * factor), np.argmax(mean_values * factor)
+
+    def get_estimated_conv_rates(self):
+        mean_values = self.beta_parameters[:, 0] / (self.beta_parameters[:, 0] + self.beta_parameters[:, 1])
+        return mean_values
