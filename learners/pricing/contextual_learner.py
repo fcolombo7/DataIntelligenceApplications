@@ -1,3 +1,5 @@
+import numpy as np
+
 from learners.pricing.learner import Learner
 
 
@@ -91,10 +93,11 @@ class ContextualLearner:
     def update(self, daily_reward, pulled_arms, user_features):
         # scan and divide according to the features
         leaves = self.context_tree.get_leaves()
+        distributions = np.zeros(len(leaves))
         for i, obs in enumerate(daily_reward):
             # i -> index used to scan the data received by the environment
             update_done = False
-            for leaf in leaves:
+            for idx, leaf in enumerate(leaves):
                 leaf_subspace = leaf.feature_subspace
                 good_leaf = True
                 for feature in leaf_subspace:
@@ -105,9 +108,11 @@ class ContextualLearner:
                 if good_leaf:
                     leaf.base_learner.update(pulled_arms[i], obs[0], obs[1])
                     update_done = True
+                    distributions[idx] += 1
                     break
             if not update_done:
                 raise AttributeError
+        return distributions.tolist()
 
     def get_daily_rewards(self):
         rew = self.context_tree.get_daily_rewards()

@@ -1,6 +1,6 @@
 import numpy as np
 
-from learners.GPTS_Learner_v2 import GPTS_Learner
+from learners.GPTS_Learner_v3 import GPTS_Learner
 from learners.pricing.thompson_sampling import ThompsonSampling
 from scipy.stats import norm
 
@@ -18,9 +18,10 @@ class JointLearner:
         self.bids = bid_values
         self.pricing_bandit = pricing_bandit_class(self.margins)
         self.adv_bandit = adv_bandit_class(self.bids)
-        # self.LEARNER_NAME = self.LEARNER_NAME + self.adv_bandit.LEARNER_NAME + '-' + self.pricing_bandit.LEARNER_NAME
         self.sel_bid = None
         self.sel_price = None
+        self.n_clicks = None
+        self.cpc = None
         self.discovery = True
 
     def pull_arm(self):
@@ -34,6 +35,10 @@ class JointLearner:
 
     def update(self, pulled_price, outcome, cost):
         self.pricing_bandit.update(pulled_price, outcome, cost)
+
+    def get_adv_params(self, n_clicks, cpc):
+        self.n_clicks = n_clicks
+        self.cpc = cpc
 
     def next_day(self):
         self.pricing_bandit.next_day()
@@ -59,6 +64,7 @@ class JointLearner:
             self.adv_bandit.pulled_arms = []
             self.adv_bandit.daily_collected_rewards = np.array([])
             self.pricing_bandit.beta_parameters = np.ones((self.pricing_bandit.n_arms, 2))
+            self.adv_bandit.day = 0
         self.pricing_bandit.update_single_future_purchase(price_arm, single_obs)
 
     def get_collected_reward(self):

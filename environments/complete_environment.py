@@ -80,7 +80,7 @@ class CompleteEnvironment:
         self.daily_users_categories = None
         # self.daily_users_features = None
         self.cur_category_id = None
-        return daily_rew, self.sampled_n_clicks, self.sampled_cpc
+        return daily_rew, sum(self.sampled_n_clicks), np.average(self.sampled_cpc, weights=self.sampled_n_clicks)
 
     def get_next_purchases_at_day(self, day, keep=True, filter_purchases=True):
         if day not in self.collected_future_purchases.keys():
