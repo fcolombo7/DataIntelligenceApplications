@@ -204,7 +204,7 @@ class ContextGenerator:
         if value_before < max_value:
             best_feature = features[idx]
             # there is a feature for which it is worth to split
-            _print(f'\t{best_feature=}', self.verbose)
+            _print(f'\t"Best feature: "{best_feature}', self.verbose)
             leaf.split(best_feature, left_learners[idx], right_learners[idx])
             _print(f'NEW CONTEXT GENERATED:\n splitting into -> {leaf.left_child.feature_subspace} and {leaf.right_child.feature_subspace}', self.verbose)
             self.metadata['SPLIT_DAYS'].append(self.t)
@@ -334,12 +334,12 @@ class ContextGenerator:
         s = '\n'+15*'*'+f' SPLIT@day={self.t} '+15*'*'+'\n'
         s += f'{leaf.feature_subspace} -> {leaf.left_child.feature_subspace} AND {leaf.right_child.feature_subspace}\n'
         s += f'COLLECTED DATA:\n' \
-             f'{self.collected_arms=}\n' \
-             f'{self.collected_rewards=}\n' \
-             f'{self.collected_features=}\n' \
-             f'{self.collected_next_purchases=}\n' \
-             f'{self.collected_past_pulled_arms=}\n' \
-             f'{self.collected_past_features=}\n'
-        s += f'{leaf.left_child.base_learner.daily_collected_rewards=}\n' \
-             f'{leaf.left_child.base_learner.next_purchases_estimation=}\n'
+             f'collected_arms: {self.collected_arms}\n' \
+             f'collected_rewards: {self.collected_rewards}\n' \
+             f'collected_features: {self.collected_features}\n' \
+             f'collected_next_purchases: {self.collected_next_purchases}\n' \
+             f'collected_past_pulled_arms: {self.collected_past_pulled_arms}\n' \
+             f'collected_past_features: {self.collected_past_features}\n'
+        s += f'left_child.base_learner.daily_collected_rewards: {leaf.left_child.base_learner.daily_collected_rewards}\n' \
+             f'left_child.base_learner.next_purchases_estimation: {leaf.left_child.base_learner.next_purchases_estimation}\n'
         self.metadata['LOG'] += s
