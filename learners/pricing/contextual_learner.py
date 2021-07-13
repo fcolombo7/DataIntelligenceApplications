@@ -4,6 +4,7 @@ from learners.pricing.learner import Learner
 
 
 class ContextualLearner:
+    LEARNER_NAME = 'Contextual-'
 
     def __init__(self, features, base_learner_class: Learner.__class__, **base_learner_args):
         self.features = features
@@ -11,6 +12,7 @@ class ContextualLearner:
         self.base_learner_args = base_learner_args
         # definition of the datastructures that handle the contexts
         self.context_tree = None
+        self.LEARNER_NAME += self.base_learner_class.LEARNER_NAME
 
     def update_context_tree(self, new_context_tree):
         self.context_tree = new_context_tree

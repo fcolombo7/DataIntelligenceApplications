@@ -177,7 +177,7 @@ class ContextGenerator:
         if len(leaves) == 0:
             return
         # check if it is worth to split the leaves
-        _print(f'\n{"-"*20} RUNNING CONTEXT GENERATOR@t={self.t} {"-"*20}', self.verbose)
+        _print(f'\n{"-"*20} RUNNING CONTEXT GENERATOR@t={self.t} [{self.context_tree.base_learner.LEARNER_NAME}]{"-"*20}', self.verbose)
         _print(f'N_LEAVES: {len(leaves)}', self.verbose)
         for leaf in leaves:
             self._evaluate_split(leaf)  # for each leaf evaluate if it is worth to split

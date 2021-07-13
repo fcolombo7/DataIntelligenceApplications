@@ -1,12 +1,16 @@
 from learners.Learner import *
 from scipy.stats import norm
+from learners.pricing.learner import Learner
+
 
 class GTS_Learner(Learner):
-    
-    def __init__(self, n_arms):
-        super().__init__(n_arms)
-        self.means = np.zeros(n_arms)
-        self.sigmas = np.ones(n_arms)*1e3
+
+    LEARNER_NAME = "GTS"
+
+    def __init__(self, arms):
+        super().__init__(arm_values=arms)
+        self.means = np.zeros(self.n_arms)
+        self.sigmas = np.ones(self.n_arms)*1e3
         
         self.ineligibility = np.zeros(self.n_arms)
         self.negative_threshold = 0.2
@@ -22,14 +26,15 @@ class GTS_Learner(Learner):
         idx = np.argmax(sampled_values)
         return idx
     
-    def update(self, pulled_arm, rewards):
+    def update(self, pulled_arm, rewards, cost=-1):
         self.t += 1
         reward = rewards['n_clicks'] * (rewards['conv_rates'] * rewards['margin'] * (1 + rewards['tau']) - rewards['cpc'])
-        self.update_observations(pulled_arm, reward)
-        self.means[pulled_arm] = np.mean(self.rewards_per_arm[pulled_arm])
+        self.outcome_per_arm[pulled_arm].append(reward)
+        self.daily_collected_rewards = np.append(self.daily_collected_rewards, reward)
+        self.means[pulled_arm] = np.mean(self.outcome_per_arm[pulled_arm])
         
         self.ineligibility[pulled_arm] = norm.cdf(0, self.means[pulled_arm], self.sigmas[pulled_arm])
 
-        n_samples = len(self.rewards_per_arm[pulled_arm])
+        n_samples = len(self.outcome_per_arm[pulled_arm])
         if n_samples > 1:
-            self.sigmas[pulled_arm] = np.std(self.rewards_per_arm[pulled_arm]) / n_samples
+            self.sigmas[pulled_arm] = np.std(self.outcome_per_arm[pulled_arm]) / n_samples

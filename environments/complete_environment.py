@@ -30,7 +30,7 @@ class CompleteEnvironment:
         self.sampled_n_clicks = None
         self.sampled_cpc = None
 
-    def day_round(self, pulled_arms, selected_bid, fixed_adv=False):
+    def day_round(self, pulled_arms, selected_bid, fixed_adv=False, fixed_price=False):
         """
         Method that returns the daily rewards according to the arms that have been pulled
         :param pulled_arms: list of tuples composed by a dictionary representing a subset of the feature and
@@ -38,9 +38,21 @@ class CompleteEnvironment:
         :param selected_bid:
         :param fixed_adv: simulation of the adv campaign. If true, the number of clicks and the cost per clicks are
         fixed, otherwise they are sampled.
+        :param fixed_price: simulation of the pricing campaign. If true, the method returns the fixed parameters
+        associated to the price in input.
         :return:
         """
         self._sample_bidding_params(selected_bid, fixed_adv)
+        if fixed_price:
+            out = {
+                'n_clicks': np.sum(self.sampled_n_clicks),
+                'cpc': np.average(self.sampled_cpc, weights=self.sampled_n_clicks),
+                'margin': self.margins[pulled_arms],
+                'tau': self.data_gen.get_future_purchases(mode='aggregate', bid=selected_bid)[pulled_arms],
+                'conv_rates': self.data_gen.get_conversion_rates(mode='aggregate', bid=selected_bid)[pulled_arms],
+            }
+            return out
+
         self._sample_daily_users()
         self.collected_future_purchases[self.day + 30] = []
         self.selected_arms[self.day] = []
