@@ -29,12 +29,19 @@ class GTS_Learner(Learner):
     def update(self, pulled_arm, rewards, cost=-1):
         self.t += 1
         reward = rewards['n_clicks'] * (rewards['conv_rates'] * rewards['margin'] * (1 + rewards['tau']) - rewards['cpc'])
+
         self.outcome_per_arm[pulled_arm].append(reward)
         self.daily_collected_rewards = np.append(self.daily_collected_rewards, reward)
-        self.means[pulled_arm] = np.mean(self.outcome_per_arm[pulled_arm])
         
-        self.ineligibility[pulled_arm] = norm.cdf(0, self.means[pulled_arm], self.sigmas[pulled_arm])
+        
+        for arm in range(self.n_arms):
+            self.means[arm] = np.mean(self.outcome_per_arm[arm])
+        #self.means[pulled_arm] = np.mean(self.outcome_per_arm[pulled_arm], dtype=np.float64)
 
+
+        self.ineligibility[pulled_arm] = norm.cdf(0, self.means[pulled_arm], self.sigmas[pulled_arm])
         n_samples = len(self.outcome_per_arm[pulled_arm])
         if n_samples > 1:
-            self.sigmas[pulled_arm] = np.std(self.outcome_per_arm[pulled_arm]) / n_samples
+            #self.sigmas[pulled_arm] = np.std(self.outcome_per_arm[pulled_arm]) / n_samples
+            for arm in range(self.n_arms):
+                self.sigmas[arm] = np.std(self.outcome_per_arm[arm]) / n_samples
