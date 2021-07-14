@@ -70,5 +70,5 @@ class JointLearner:
             self.adv_bandit.day = 0
         self.pricing_bandit.update_single_future_purchase(price_arm, single_obs)
 
-    def get_collected_reward(self):
+    def get_daily_rewards(self):
         return self.pricing_bandit.daily_collected_rewards

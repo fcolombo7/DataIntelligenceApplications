@@ -217,7 +217,10 @@ class CompleteTask(Task):
             plt.figure(0, figsize=figsize)
             plt.ylabel("Regret")
             plt.xlabel("Day")
-            opt = self.disaggr_opt if self.pricing_context else self.aggr_opt
+            if self.pricing_context:
+                opt = self.disaggr_opt
+            else:
+                opt = self.aggr_opt
             for val in self.result['rewards'].values():
                 plt.plot(np.cumsum(opt - val))
             #plt.plot(1000*np.sqrt(np.linspace(0, 364, 365))+15000, '--')
@@ -284,7 +287,7 @@ class CompleteTask(Task):
                 expected_rewards = np.append(expected_rewards, exp)
             self.aggr_opt = np.max(expected_rewards)
             return
-        if not self.fixed_price and self.fixed_adv:
+        if not self.fixed_price and not self.fixed_adv:
             aggr_arr = []
             disaggr_arr = []
             for j, bid in enumerate(self.data_generator.get_bids()):
