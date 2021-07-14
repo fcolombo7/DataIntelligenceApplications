@@ -95,6 +95,10 @@ class Learner(ABC):
         else:
             raise NotImplementedError()
 
+    def update_next_purchases(self, pulled_arms_data: list, next_purchases_data: list, features_data=None):
+        for arm, n_purchases in zip(pulled_arms_data, next_purchases_data):
+            self.update_single_future_purchase(arm, n_purchases)
+
     def get_next_purchases_data(self):
         """
             Method used to get the data about the estimation of the next purchases distributions.
@@ -109,6 +113,9 @@ class Learner(ABC):
         self.next_purchases_estimation = estimation
         self.next_purchases_observations = observations
         self.next_purchases_update = update_mode
+
+    def get_daily_rewards(self):
+        return self.daily_collected_rewards
 
     @abstractmethod
     def pull_arm(self) -> int:

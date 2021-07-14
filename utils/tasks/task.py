@@ -2,20 +2,17 @@ import datetime
 import json
 import os
 import shutil
-from typing import Dict
 from abc import ABC, abstractmethod
-from multiprocessing import Process, cpu_count, Manager
 from zipfile import ZipFile
-from data_generators.data_generator import DataGenerator
 
-import numpy as np
+from data_generators.standard_generator import StandardDataGenerator
 
 
 class Task(ABC):
     """
     Abstract class used to represent the tasks run by the simulator
     """
-    def __init__(self, name: str, description: str, data_generator: DataGenerator, verbose: int):
+    def __init__(self, name: str, description: str, src: str, verbose: int):
         """
         Class constructor
         :param name: the name of the task
@@ -25,13 +22,14 @@ class Task(ABC):
         self.name = name
         self.description = description
         self.verbose = verbose
-        self.data_generator = data_generator
+        self.data_src = src
+        self.data_generator = StandardDataGenerator(self.data_src)
         self.ready = False
         self.metadata = {
             'NAME': self.name,
             'DESCRIPTION': self.description,
             'EXECUTION_DATE': 'never',
-            'SRC': data_generator.get_source()
+            'SRC': self.data_src
         }
         self.T = None
         self.n_experiments = None
@@ -39,13 +37,9 @@ class Task(ABC):
         self.result = {}
 
     @abstractmethod
-    def _serial_run(self, process_id: int, n_experiments: int, collector: Dict) -> None:
+    def run(self) -> None:
         """
-        Single core execution of the simulation.
-        :param process_id: identifier of the process.
-        :param n_experiments: number of experiments tried by the single core.
-        :param collector: dictionary used as shared state between cores.
-        Each core should save values in collector[process_id].
+        Execution of the simulation.
         """
         pass
 
@@ -59,14 +53,6 @@ class Task(ABC):
         pass
 
     @abstractmethod
-    def _finalize_run(self, collected_values: list) -> None:
-        """
-        Method used to aggregate all the result computed by each core, and set the final result [`result`: dict]
-        :param collected_values: values computed by each core
-        """
-        pass
-
-    @abstractmethod
     def plot(self, plot_number: int, figsize: (float, float)) -> None:
         """
         Plot the result of the simulation.
@@ -74,46 +60,6 @@ class Task(ABC):
         :param figsize: dimension of the figure.
         """
         pass
-
-    def run(self, force=False, parallelize=True, cores_number=-1) -> None:
-        """
-        Method used to start the simulation of the Task.
-        :param force: if False (default) check if the task has been already executed/loaded. If so the execution is skipped.
-        if True, the execution is performed in any case.
-        :param parallelize: if True the simulation is run in parallel, otherwise serially.
-        :param cores_number: if parallelize = True, it represents the number of cores used by the simulator.
-        (default= -1 =>it uses all the available cores)
-        """
-        # check if the config method has been called TODO: check when other tasks are available.
-        assert self.T is not None and self.learners_to_test is not None and self.n_experiments is not None
-
-        if not force and self.ready:
-            self._print('Warning: The task was already executed, so the result is available.')
-            return
-        if force and self.ready:
-            self._print('Warning: Forcing the execution of the task, even if the result is available.')
-        self._print(f'The execution of the task `{self.name}` is started.')
-
-        manager = Manager()
-        collector = manager.dict()
-
-        if not parallelize:
-            cores_number = 1
-        else:
-            if cores_number == -1:
-                cores_number = cpu_count()
-            else:
-                cores_number = max(cpu_count(), cores_number)
-
-        num_exp_per_process = int(np.ceil(self.n_experiments / cores_number))
-        processes = [Process(target=self._serial_run, args=(n, num_exp_per_process, collector)) for n
-                     in range(0, cores_number)]
-        for p in processes:
-            p.start()
-        for p in processes:
-            p.join()
-        self._finalize_run(collector.values())
-        self._finalize_execution()
 
     def load(self, filename: str) -> None:
         """
@@ -130,7 +76,7 @@ class Task(ABC):
         self.ready = True
         self._print(f"Simulation's result loaded from `{filename}`.")
 
-    def save(self, folder='simulations_results', overwrite=False) -> None:
+    def save(self, folder='simulations_results', overwrite=False) -> str:
         """
         Save the result computed by the current simulation.
         :param folder: output folder.
@@ -169,6 +115,8 @@ class Task(ABC):
         shutil.rmtree(temp_dir_path)
         os.chdir(cur_dir)
         self._print(f"The simulation's result is stored in `{folder}/{filename}.zip`.")
+        path = f'{folder}/{filename}.zip'
+        return path
 
     def _print(self, text: str) -> None:
         """

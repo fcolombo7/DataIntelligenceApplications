@@ -10,22 +10,22 @@ from utils.tasks.task4 import Task4
 
 def task_builder(step, time_horizon, n_experiments, source=None, simulation_name=None):
     if source is None:
-        source = 'src/basic001.json'
+        source = 'src/basic007.json'
     data_generator = StandardDataGenerator(source)
     if step == 3:
         description = 'Simulation of the step 3.'
         if simulation_name is None:
-            task = Task3(data_generator, description=description)
+            task = Task3(source, description=description)
         else:
-            task = Task3(data_generator, name=simulation_name, description=description)
+            task = Task3(source, name=simulation_name, description=description)
         task.config(time_horizon=time_horizon, n_experiments=n_experiments)
         return task
     if step == 4:
         description = 'Simulation of the step 4.'
         if simulation_name is None:
-            task = Task4(data_generator, description=description)
+            task = Task4(source, description=description)
         else:
-            task = Task4(data_generator, name=simulation_name, description=description)
+            task = Task4(source, name=simulation_name, description=description)
         task.config(time_horizon=time_horizon, n_experiments=n_experiments)
         return task
 

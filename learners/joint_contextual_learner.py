@@ -33,13 +33,13 @@ class JointContextualLearner:
         self.cpc = None
         self.discovery = True
 
-    def pull_arms(self):
+    def pull_arm(self):
         """
         This method returns the pair bid - structure of arm to pull according to the context.
         :return:
         """
         self.sel_bid = self.adv_bandit.pull_arm()
-        self.sel_prices = self.pricing_contextual_bandit.pull_arms()
+        self.sel_prices = self.pricing_contextual_bandit.pull_arm()
         return self.sel_bid, self.sel_prices
 
     def get_adv_params(self, n_clicks, cpc):

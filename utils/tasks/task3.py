@@ -4,13 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from data_generators.standard_generator import StandardDataGenerator
-from environments.contextual_environment import ContextualEnvironment
-from environments.pricing_environment import PricingEnvironment
+from environments.complete_environment import CompleteEnvironment
 from learners.pricing.thompson_sampling import ThompsonSampling
 from learners.pricing.ucb import UCB
 from utils.tasks.task import Task
-from data_generators.data_generator import DataGenerator
 
 
 class Task3(Task):
@@ -19,35 +16,38 @@ class Task3(Task):
     when the algorithm does not discriminate among the customers’ classes.
     """
 
-    def __init__(self, data_generator: DataGenerator, name="Step#3", description="", verbose=1):
-        super().__init__(name, description, data_generator, verbose)
+    def __init__(self, data_src: str, name="Step#3", description="", selected_bid=3, verbose=1):
+        super().__init__(name, description, data_src, verbose)
         # input data
-        self.prices = data_generator.get_prices()
-        self.bids = data_generator.get_bids()
-        self.margins = data_generator.get_margins()
-        self.selected_bid = 3
-        self.conversion_rates = data_generator.get_conversion_rates(mode='all')
-        self.future_purchases = data_generator.get_future_purchases(mode='all')
-        self.n_clicks = data_generator.get_daily_clicks(mode='all')
-        self.costs_per_click = data_generator.get_costs_per_click(mode='aggregate', bid=self.selected_bid)
-        self.fixed_n_clicks = np.rint(data_generator.get_daily_clicks(mode='aggregate')[self.selected_bid]).astype(int)
+        self.prices = self.data_generator.get_prices()
+        self.bids = self.data_generator.get_bids()
+        self.margins = self.data_generator.get_margins()
+        self.selected_bid = selected_bid
+        self.conversion_rates = self.data_generator.get_conversion_rates(mode='all')
+        self.future_purchases = self.data_generator.get_future_purchases(mode='all')
+        self.number_of_clicks = self.data_generator.get_daily_clicks(mode='all')
+        self.costs_per_click = self.data_generator.get_costs_per_click(mode='aggregate', bid=self.selected_bid)
+        self.fixed_n_clicks = np.rint(self.data_generator.get_daily_clicks(mode='aggregate')[self.selected_bid]).astype(int)
         self.fixed_cost = self.costs_per_click[self.selected_bid]
         # control variables
-        self.fractions = data_generator.get_class_distributions(bid=self.selected_bid)
-
+        self.fractions = self.data_generator.get_class_distributions(bid=self.selected_bid)
+        # optimal values
         temp = (self.margins * np.average(self.conversion_rates * (1 + self.future_purchases),
                                           axis=0,
                                           weights=self.fractions) - self.fixed_cost) * self.fixed_n_clicks
         self.aggr_opt_arm = np.argmax(temp)
         self.aggr_opt = np.max(temp)
 
-        self.env_params = {
-            'bid_idx': self.selected_bid,
-            # 'mode': 'aggregate',
-            'mode': 'all',
-            'src': data_generator.get_source(),
-            'generator': 'standard'
-        }
+        self.disaggr_opt = 0
+        self.opt_arms = []
+        disaggr_costs = self.data_generator.get_costs_per_click(mode='all')
+        for i, _ in enumerate(self.conversion_rates):
+            t = (self.margins * self.conversion_rates[i] * (1 + self.future_purchases[i]) - disaggr_costs[i, selected_bid]) * \
+                self.number_of_clicks[i, selected_bid]
+            opt_arm = np.argmax(t)
+            opt_value = np.max(t)
+            self.opt_arms.append(opt_arm)
+            self.disaggr_opt += opt_value
 
     def _serial_run(self, process_id: int, n_experiments: int, collector: Dict) -> None:
         rewards_per_experiment = {}
@@ -61,20 +61,20 @@ class Task3(Task):
             test_instances = []
             for learner in self.learners_to_test:
                 test_instances.append((learner(arm_values=self.margins),
-                                       ContextualEnvironment(**self.env_params)))
-                                       # PricingEnvironment(**self.env_params)))
+                                       CompleteEnvironment(self.data_src)))
+
             for t in range(self.T):
                 for learner, env in test_instances:
                     learner.next_day()
-
                     past_arms = env.get_selected_arms_at_day(t - 30, keep=False, filter_purchases=True)
+                    _ = env.get_collected_user_features_at_day(t - 30, keep=False,
+                                                               filter_purchases=True)  # past features not usefull here
                     month_purchases = env.get_next_purchases_at_day(t, keep=False, filter_purchases=True)
                     if month_purchases is not None:
                         for arm, n_purchases in zip(past_arms, month_purchases):
                             learner.update_single_future_purchase(arm, n_purchases)
-
                     pulled_arm = learner.pull_arm()
-                    daily_reward = env.day_round(pulled_arm)
+                    daily_reward, _, _ = env.day_round(pulled_arm, selected_bid=self.selected_bid, fixed_adv=True)
                     for outcome, cost in daily_reward:
                         learner.update(pulled_arm, outcome, cost)
 
@@ -137,8 +137,8 @@ class Task3(Task):
             plt.xlabel("Day")
             for val in self.result.values():
                 plt.plot(np.cumsum(self.aggr_opt - val))
-            plt.plot(4000 * np.sqrt(np.linspace(0, 364, 364)), '--')
-            labels = list(self.result.keys()) + ['sqrt(N)']
+            plt.plot(4000 * np.sqrt(np.linspace(0, 364, 365)), '--')
+            labels = list(self.result.keys()) + ['O(sqrt(t))']
             plt.legend(labels)
             plt.title("Cumulative regret")
             plt.show()
@@ -147,38 +147,10 @@ class Task3(Task):
             plt.figure(1, figsize=figsize)
             plt.xlabel("Day")
             plt.ylabel("Daily reward")
-            plt.plot([self.aggr_opt] * self.T, '--g', label='clairvoyant')
+            plt.plot([self.disaggr_opt] * self.T, '--g', label='clairvoyant')
+            plt.plot([self.aggr_opt] * self.T, '--c', label='aggr_clairvoyant')
             for key in self.result:
                 plt.plot(self.result[key], label=key)
             plt.legend(loc='best')
             plt.title("Reward by day")
             plt.show()
-
-
-# DEBUG - Not sure it works anymore due to changes
-if __name__ == '__main__':
-    task = Task3(StandardDataGenerator('../../src/basic004.json'))
-    task.load(filename='../../simulations_results/result_Step#3_3.zip')
-    task.plot(0)
-    task.plot(1)
-
-    """
-    print('PARALLEL EXECUTION')
-    start_time = time.perf_counter_ns()
-    task = Task3(BasicDataGenerator('../../src/basic001.json'))
-    # task.load('../../simulations_results/result_Step#3.zip')
-    task.config(time_horizon=365, n_experiments=10, verbose=0)
-    task.run(parallelize=True)
-    task.save('../../simulations_results')
-    end_time = time.perf_counter_ns()
-    print(f"Execution time: {end_time - start_time} ns\n")
-    print('SERIAL EXECUTION')
-    start_time = time.perf_counter_ns()
-    task = Task3(BasicDataGenerator('../../src/basic001.json'))
-    # task.load('../../simulations_results/result_Step#3.zip')
-    task.config(time_horizon=365, n_experiments=10, verbose=0)
-    task.run(parallelize=False)
-    task.save('../../simulations_results')
-    end_time = time.perf_counter_ns()
-    print(f"Execution time: {end_time - start_time} ns")
-    """

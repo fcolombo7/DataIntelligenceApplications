@@ -80,7 +80,7 @@ class ContextualLearner:
             if not update_done:
                 raise AttributeError
 
-    def pull_arms(self):
+    def pull_arm(self):
         """ get a structure of arm to pull according to the context """
         context_arm_data = []
         for leaf in self.context_tree.get_leaves():

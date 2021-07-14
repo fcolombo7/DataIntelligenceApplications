@@ -4,9 +4,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-
-from data_generators.data_generator import DataGenerator
-from environments.contextual_environment import ContextualEnvironment
+from environments.complete_environment import CompleteEnvironment
 from learners.pricing.contextual_learner import ContextualLearner
 from learners.pricing.thompson_sampling import ThompsonSampling
 from learners.pricing.ucb import UCB
@@ -20,32 +18,44 @@ class Task4(Task):
     when the algorithm discriminate among the customers’ classes.
     """
 
-    def __init__(self, data_generator: DataGenerator, name="Step#4", description="", verbose=1):
-        super().__init__(name, description, data_generator, verbose)
+    def __init__(self, data_src: str, name="Step#4", description="", selected_bid=4, verbose=1):
+        super().__init__(name, description, data_src, verbose)
         # input data
-        self.prices = data_generator.get_prices()
-        self.bids = data_generator.get_bids()
-        self.margins = data_generator.get_margins()
-        self.classes = data_generator.get_classes()
-        self.conversion_rates = data_generator.get_conversion_rates(mode='all')
-        self.future_purchases = data_generator.get_future_purchases(mode='all')
-        self.selected_bid = 4
-        self.number_of_clicks = data_generator.get_daily_clicks(mode='all')
-        self.costs_per_click = data_generator.get_costs_per_click(mode='aggregate', bid=self.selected_bid)
+        self.prices = self.data_generator.get_prices()
+        self.bids = self.data_generator.get_bids()
+        self.margins = self.data_generator.get_margins()
+        self.classes = self.data_generator.get_classes()
+        self.conversion_rates = self.data_generator.get_conversion_rates(mode='all')
+        self.future_purchases = self.data_generator.get_future_purchases(mode='all')
+        self.selected_bid = selected_bid
+        self.number_of_clicks = self.data_generator.get_daily_clicks(mode='all')
+        self.costs_per_click = self.data_generator.get_costs_per_click(mode='aggregate', bid=self.selected_bid)
         self.fixed_cost = self.costs_per_click[self.selected_bid]
-        self.fixed_n_clicks = np.rint(data_generator.get_daily_clicks(mode='aggregate')[self.selected_bid]).astype(int)
-        self.features = data_generator.get_features()
+        self.fixed_n_clicks = np.rint(self.data_generator.get_daily_clicks(mode='aggregate')[self.selected_bid]).astype(int)
+        self.features = self.data_generator.get_features()
         # control variables
         self.fractions = self.data_generator.get_class_distributions(self.selected_bid)
         self.bandit_args = {
             'arm_values': self.margins
         }
-        self.env_args = {
-            'bid_idx': self.selected_bid,
-            'mode': 'all',
-            'src': data_generator.get_source(),
-            'generator': 'standard'
-        }
+        # optimal values
+        temp = (self.margins * np.average(self.conversion_rates * (1 + self.future_purchases),
+                                          axis=0,
+                                          weights=self.fractions) - self.fixed_cost) * self.fixed_n_clicks
+        self.aggr_opt_arm = np.argmax(temp)
+        self.aggr_opt = np.max(temp)
+
+        self.disaggr_opt = 0
+        self.opt_arms = []
+        disaggr_costs = self.data_generator.get_costs_per_click(mode='all')
+        for i, _ in enumerate(self.conversion_rates):
+            t = (self.margins * self.conversion_rates[i] * (1 + self.future_purchases[i]) - disaggr_costs[
+                i, selected_bid]) * \
+                self.number_of_clicks[i, selected_bid]
+            opt_arm = np.argmax(t)
+            opt_value = np.max(t)
+            self.opt_arms.append(opt_arm)
+            self.disaggr_opt += opt_value
 
         self.cg_start_from = None
         self.cg_frequency = None
@@ -68,7 +78,7 @@ class Task4(Task):
                 context_learner = ContextualLearner(self.features, learner, **self.bandit_args)
                 test_instances.append(
                     (context_learner,
-                     ContextualEnvironment(**self.env_args),
+                     CompleteEnvironment(self.data_src),
                      ContextGenerator(features=self.features,
                                       contextual_learner=context_learner,
                                       update_frequency=self.cg_frequency,
@@ -76,27 +86,27 @@ class Task4(Task):
                                       confidence=self.cg_confidence,
                                       verbose=0))
                 )
-
             for t in range(self.T):
                 for context_learner, env, context_generator in test_instances:
                     context_learner.next_day()
                     past_arms = env.get_selected_arms_at_day(t - 30, keep=False, filter_purchases=True)
                     past_features = env.get_collected_user_features_at_day(t - 30, keep=False, filter_purchases=True)
-                    month_purchases = env.get_next_purchases_at_day(t, keep=False, filter_purchases=True)
+                    month_purchases = env.get_next_purchases_at_day(t, keep=True, filter_purchases=True)
                     if month_purchases is not None:
                         context_learner.update_next_purchases(past_arms, month_purchases, past_features)
 
                     pulled_arms = context_learner.pull_arms()
-                    daily_rewards = env.day_round(pulled_arms)
+                    daily_rewards, _, _ = env.day_round(pulled_arms, selected_bid=self.selected_bid, fixed_adv=True)
                     daily_users_features = env.get_collected_user_features_at_day(t)
                     daily_pulled_arms = env.get_selected_arms_at_day(t)
 
                     context_learner.update(daily_rewards, daily_pulled_arms, daily_users_features)
-                    context_generator.collect_daily_data(daily_pulled_arms, daily_rewards, daily_users_features,
+                    context_generator.collect_daily_data(daily_pulled_arms,
+                                                         daily_rewards,
+                                                         daily_users_features,
                                                          next_purchases=month_purchases,
                                                          past_pulled_arms=past_arms,
                                                          past_features=past_features)
-
             for learner, _, _ in test_instances:
                 learner.next_day()
                 rewards_per_experiment[learner.base_learner_class.LEARNER_NAME].append(learner.get_daily_rewards())
@@ -171,30 +181,14 @@ class Task4(Task):
 
         sns.set_theme(style=theme)
 
-        temp = (self.margins * np.average(self.conversion_rates * (1 + self.future_purchases),
-                                          axis=0,
-                                          weights=self.fractions) - self.fixed_cost) * self.fixed_n_clicks
-        aggr_opt_arm = np.argmax(temp)
-        aggr_opt = np.max(temp)
-
-        disaggr_opt = 0
-        opt_arms = []
-        for i, _ in enumerate(self.classes):
-            t = (self.margins * self.conversion_rates[i] * (1 + self.future_purchases[i]) - self.fixed_cost) * \
-                self.number_of_clicks[i, self.selected_bid]
-            opt_arm = np.argmax(t)
-            opt_value = np.max(t)
-            opt_arms.append(opt_arm)
-            disaggr_opt += opt_value
-
         if plot_number == 0:
             plt.figure(0, figsize=figsize)
             plt.ylabel("Regret")
             plt.xlabel("Day")
             for val in self.result['rewards'].values():
-                plt.plot(np.cumsum(disaggr_opt - val))
-            plt.plot(4000 * np.sqrt(np.linspace(0, 364, 364)), '--')
-            labels = list(self.result['rewards'].keys()) + ['sqrt(N)']
+                plt.plot(np.cumsum(self.disaggr_opt - val))
+            plt.plot(4000 * np.sqrt(np.linspace(0, 364, 365)), '--')
+            labels = list(self.result['rewards'].keys()) + ['O(sqrt(T))']
             plt.legend(labels)
             plt.title("Cumulative regret")
             plt.show()
@@ -203,8 +197,8 @@ class Task4(Task):
             plt.figure(1, figsize=figsize)
             plt.xlabel("Day")
             plt.ylabel("Daily reward")
-            plt.plot([disaggr_opt] * self.T, '--g', label='clairvoyant')
-            plt.plot([aggr_opt] * self.T, '--c', label='clairvoyant_aggregated')
+            plt.plot([self.disaggr_opt] * self.T, '--g', label='clairvoyant')
+            plt.plot([self.aggr_opt] * self.T, '--c', label='aggr_clairvoyant')
             for key in self.result['rewards']:
                 plt.plot(self.result['rewards'][key], label=key)
             plt.legend(loc='best')
