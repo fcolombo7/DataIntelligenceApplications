@@ -248,13 +248,17 @@ class CompleteTask(Task):
             if not self.pricing_context:
                 print("No splits to show. No context generator used in this task.")
                 return
+            if len(self.result['splits'].keys()) > 1:
+                algo = 'TS'
+            else:
+                algo = self.result['splits'].keys()[0]
             plt.figure(2, figsize=figsize)
-            plt.ylabel("num_splits")
-            plt.xlabel("experiment")
-            for val in self.result['splits'].values():
-                plt.plot(val, '--o')
-            plt.legend(self.result['splits'].keys())
-            plt.title("Number of splits")
+            plt.yticks(ticks=[0, 1, 2, 3, 4])
+            plt.ylabel("Number of contexts")
+            plt.xlabel("experiments")
+            plt.plot(self.result['splits'][algo], '--o', label=algo)
+            plt.legend(loc='best')
+            plt.title(f"Number of contexts per experiment of the {algo} learner.")
             plt.show()
 
     def _compute_opt_values(self):

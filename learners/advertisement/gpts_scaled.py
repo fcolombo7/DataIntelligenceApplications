@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler
 from scipy.stats import norm
 
 
-class ScaledGPTS(Learner):
+class GPTS(Learner):
 
     LEARNER_NAME = "GPTS-Scaled"
 
@@ -21,7 +21,8 @@ class ScaledGPTS(Learner):
         self.pulled_arms = []
 
         alpha = 40.0
-        kernel = C(1.0, (1e-2, 1e5)) * RBF(1.0, (1e-2, 1e5))
+        #kernel = C(1.0, (1e-3, 1e4)) * RBF(1.0, (1e-3, 1e4))
+        kernel = C(1.0) * RBF(1.0)
         self.gp = GaussianProcessRegressor(kernel=kernel, alpha=alpha ** 2, normalize_y=True, n_restarts_optimizer=9)
 
     def update_observations(self, arm_idx, rewards, cost):

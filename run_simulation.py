@@ -1,5 +1,6 @@
 import argparse
 from learners.advertisement.gpts import GPTS
+from learners.advertisement.gpts_scaled import GPTS as GPTS2
 from learners.advertisement.gts import GTS
 from learners.joint.joint_contextual_learner import JointContextualLearner
 from learners.joint.joint_learner import JointLearner
