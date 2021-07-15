@@ -1,6 +1,6 @@
 import numpy as np
 
-from learners.GPTS_Learner_v3 import GPTS_Learner
+from learners.advertisement.gpts import GPTS
 from learners.pricing.thompson_sampling import ThompsonSampling
 
 
@@ -12,7 +12,7 @@ class JointLearner:
                  margin_values,
                  bid_values,
                  pricing_bandit_class=ThompsonSampling,
-                 adv_bandit_class=GPTS_Learner):
+                 adv_bandit_class=GPTS):
         self.margins = margin_values
         self.bids = bid_values
         self.pricing_bandit = pricing_bandit_class(self.margins)
