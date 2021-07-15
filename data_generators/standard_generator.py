@@ -175,76 +175,145 @@ class Plotter:
         self.dg = StandardDataGenerator(filename)
         self.categories = list(self.dg.get_classes().keys())
 
-    def plot_conversion_rates(self, aggregate=False, sel_bid=5, figsize=(6, 4), theme='whitegrid'):
+    def plot_conversion_rates(self, aggregate=False, sel_bid=5, figsize=(6, 4), theme='whitegrid', sub=False):
         sns.set_theme(style=theme)
-        plt.figure(figsize=figsize)
         prices = self.dg.get_prices()
-        plt.xticks(prices)
-        if not aggregate:
+        if sub:
+            f, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+            ax1.set_xticks(prices)
+            ax2.set_xticks(prices)
+        else:
+            ax1 = ax2 = None
+            plt.figure(figsize=figsize)
+            plt.xticks(prices)
+        if not aggregate or sub:
             conv_rates = self.dg.get_conversion_rates()
             for i in range(0, len(conv_rates)):
-                plt.plot(prices, conv_rates[i], '-o', label=self.categories[i])
-            title = "Conversion rates"
-        else:
+                if sub:
+                    ax1.plot(prices, conv_rates[i], '-o', label=self.categories[i])
+                    ax1.set_title("Conversion rates")
+                    ax1.legend(loc='best')
+                else:
+                    plt.plot(prices, conv_rates[i], '-o', label=self.categories[i])
+                    plt.title("Conversion rates")
+                    plt.legend(loc='best')
+        if aggregate or sub:
             conv_rate = self.dg.get_conversion_rates(mode='aggregate', bid=sel_bid)
-            plt.plot(prices, conv_rate, '-o', label='aggr. conv. rate')
-            title = "Aggregated conversion rate"
-        plt.legend(loc='best')
-        plt.title(title)
+            if sub:
+                ax2.plot(prices, conv_rate, '-o', label='aggr. conv. rate')
+                ax2.set_title("Aggregated conversion rate")
+                ax2.legend(loc='best')
+            else:
+                plt.plot(prices, conv_rate, '-o', label='aggr. conv. rate')
+                plt.title("Aggregated conversion rate")
+                plt.legend(loc='best')
         plt.show()
 
-    def plot_daily_clicks(self, aggregate=False, figsize=(6, 4), theme='whitegrid'):
+    def plot_daily_clicks(self, aggregate=False, figsize=(6, 4), theme='whitegrid', sub=False):
         sns.set_theme(style=theme)
-        plt.figure(figsize=figsize)
         bids = self.dg.get_bids()
-        plt.xticks(bids, rotation=70)
-        if not aggregate:
+        if sub:
+            f, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+            ax1.set_xticks(bids)
+            ax2.set_xticks(bids)
+            ax1.tick_params('x', labelrotation=70)
+            ax2.tick_params('x', labelrotation=70)
+        else:
+            ax1 = ax2 = None
+            plt.figure(figsize=figsize)
+            plt.xticks(bids, rotation=70)
+        if not aggregate or sub:
             daily_clicks = self.dg.get_daily_clicks()
             for i in range(0, len(daily_clicks)):
-                plt.plot(bids, daily_clicks[i], '-o', label=self.categories[i])
-            title = "Daily clicks"
-        else:
+                if sub:
+                    ax1.plot(bids, daily_clicks[i], '-o', label=self.categories[i])
+                    ax1.set_title("Daily clicks")
+                    ax1.legend(loc='best')
+                else:
+                    plt.plot(bids, daily_clicks[i], '-o', label=self.categories[i])
+                    plt.title("Daily clicks")
+                    plt.legend(loc='best')
+        if aggregate or sub:
             daily_clicks = self.dg.get_daily_clicks(mode='aggregate')
-            plt.plot(bids, daily_clicks, '-o', label='aggr. daily clicks')
-            title = "Aggregated daily clicks"
-        plt.legend(loc='best')
-        plt.title(title)
+            if sub:
+                ax2.plot(bids, daily_clicks, '-o', label='aggr. daily clicks')
+                ax2.set_title("Aggregated daily clicks")
+                ax2.legend(loc='best')
+            else:
+                plt.plot(bids, daily_clicks, '-o', label='aggr. daily clicks')
+                plt.title("Aggregated daily clicks")
+                plt.legend(loc='best')
         plt.show()
 
-    def plot_costs_per_clicks(self, aggregate=False, sel_bid=5, figsize=(6, 4), theme='whitegrid'):
+    def plot_costs_per_clicks(self, aggregate=False, sel_bid=5, figsize=(6, 4), theme='whitegrid', sub=False):
         sns.set_theme(style=theme)
-        plt.figure(figsize=figsize)
         bids = self.dg.get_bids()
-        plt.xticks(bids, rotation=70)
-        if not aggregate:
-            costs = self.dg.get_costs_per_click()
+        if sub:
+            f, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+            ax1.set_xticks(bids)
+            ax2.set_xticks(bids)
+            ax1.tick_params('x', labelrotation=70)
+            ax2.tick_params('x', labelrotation=70)
+            ax1.plot(bids, bids, color='black', label="y=x")
+            ax2.plot(bids, bids, color='black', label="y=x")
+        else:
+            ax1 = ax2 = None
+            plt.figure(figsize=figsize)
             plt.xticks(bids, rotation=70)
             plt.plot(bids, bids, color='black', label="y=x")
+        if not aggregate or sub:
+            costs = self.dg.get_costs_per_click()
             for i in range(0, len(costs)):
-                plt.plot(bids, costs[i], '-o', label=self.categories[i])
-            title = "Costs per click"
-        else:
+                if sub:
+                    ax1.plot(bids, costs[i], '-o', label=self.categories[i])
+                    ax1.set_title("Costs per click")
+                    ax1.legend(loc='best')
+                else:
+                    plt.plot(bids, costs[i], '-o', label=self.categories[i])
+                    plt.title("Costs per click")
+                    plt.legend(loc='best')
+        if aggregate or sub:
             costs = self.dg.get_costs_per_click(mode='aggregate', bid=sel_bid)
-            plt.plot(bids, costs, '-o', label='aggr. cpc')
-            title = "Aggregated cost per click"
-        plt.legend(loc='best')
-        plt.title(title)
+            if sub:
+                ax2.plot(bids, costs, '-o', label='aggr. cpc')
+                ax2.set_title("Aggregated cost per click")
+                ax2.legend(loc='best')
+            else:
+                plt.plot(bids, costs, '-o', label='aggr. cpc')
+                plt.title("Aggregated cost per click")
+                plt.legend(loc='best')
         plt.show()
 
-    def plot_next_purchases(self, aggregate=False, sel_bid=5, figsize=(6, 4), theme='whitegrid'):
+    def plot_next_purchases(self, aggregate=False, sel_bid=5, figsize=(6, 4), theme='whitegrid', sub=False):
         sns.set_theme(style=theme)
-        plt.figure(figsize=figsize)
         prices = self.dg.get_prices()
-        plt.xticks(prices)
-        if not aggregate:
+        if sub:
+            f, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+            ax1.set_xticks(prices)
+            ax2.set_xticks(prices)
+        else:
+            ax1 = ax2 = None
+            plt.figure(figsize=figsize)
+            plt.xticks(prices)
+        if not aggregate or sub:
             next_purch = self.dg.get_future_purchases()
             for i in range(0, len(next_purch)):
-                plt.plot(prices, next_purch[i], '-o', label=self.categories[i])
-            title = "Future purchases"
-        else:
+                if sub:
+                    ax1.plot(prices, next_purch[i], '-o', label=self.categories[i])
+                    ax1.set_title("Future purchases")
+                    ax1.legend(loc='best')
+                else:
+                    plt.plot(prices, next_purch[i], '-o', label=self.categories[i])
+                    plt.title("Future purchases")
+                    plt.legend(loc='best')
+        if aggregate or sub:
             next_purch = self.dg.get_future_purchases(mode='aggregate', bid=sel_bid)
-            plt.plot(prices, next_purch, '-o', label='aggr. tau')
-            title = "Aggregated future purchases"
-        plt.legend(loc='best')
-        plt.title(title)
+            if sub:
+                ax2.plot(prices, next_purch, '-o', label='aggr. tau')
+                ax2.set_title("Aggregated future purchases")
+                ax2.legend(loc='best')
+            else:
+                plt.plot(prices, next_purch, '-o', label='aggr. tau')
+                plt.title("Aggregated future purchases")
+                plt.legend(loc='best')
         plt.show()

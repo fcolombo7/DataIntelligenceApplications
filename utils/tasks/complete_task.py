@@ -206,7 +206,7 @@ class CompleteTask(Task):
             self.cg_confidence = self.metadata['CG_CONFIDENCE']
         self._compute_opt_values()
 
-    def plot(self, plot_number=0, figsize=(10, 8), theme="whitegrid", logn=False, logn_coeff=2000) -> None:
+    def plot(self, plot_number=0, figsize=(10, 8), theme="whitegrid", logn=False, logn_coeff=2500) -> None:
         assert self.ready
         if plot_number < 0 or plot_number > 2:
             raise TypeError("`plot_number` kwarg error: only 3 plot are available.")
@@ -251,7 +251,7 @@ class CompleteTask(Task):
             if len(self.result['splits'].keys()) > 1:
                 algo = 'TS'
             else:
-                algo = self.result['splits'].keys()[0]
+                algo = list(self.result['splits'].keys())[0]
             plt.figure(2, figsize=figsize)
             plt.yticks(ticks=[0, 1, 2, 3, 4])
             plt.ylabel("Number of contexts")
