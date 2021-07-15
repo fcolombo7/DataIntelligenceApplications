@@ -1,6 +1,6 @@
 import numpy as np
 
-from learners.GPTS_Learner_v3 import GPTS_Learner
+from learners.advertisement.gpts import GPTS
 from learners.pricing.contextual_learner import ContextualLearner
 from learners.pricing.thompson_sampling import ThompsonSampling
 from scipy.stats import norm
@@ -15,7 +15,7 @@ class JointContextualLearner:
                  bid_values,
                  features,
                  pricing_bandit_class=ThompsonSampling,
-                 adv_bandit_class=GPTS_Learner):
+                 adv_bandit_class=GPTS):
         self.margins = margin_values
         self.bids = bid_values
         self.features = features
@@ -47,23 +47,15 @@ class JointContextualLearner:
         self.cpc = cpc
 
     def update(self, daily_reward, pulled_prices, user_features):
-        # TODO: CHECK HERE!!!
         contexts_distribution = self.pricing_contextual_bandit.update(daily_reward, pulled_prices, user_features)
-        #print(f"DISTRIB: {contexts_distribution}")
         reward = 0
         leaves = self.pricing_contextual_bandit.context_tree.get_leaves()
         for i, context_click in enumerate(contexts_distribution):
-            #print(self.sel_prices[i][1])
             conv_rate = leaves[i].base_learner.get_estimated_conv_rates()[self.sel_prices[i][1]]
-            #print(f"C_RATE: {conv_rate}")
             tau = leaves[i].base_learner.next_purchases_estimation[self.sel_prices[i][1]]
-            #print(f"TAU: {tau}")
             margin = self.margins[self.sel_prices[i][1]]
-            #print(f"MARGIN: {margin}")
             context_reward = context_click * (conv_rate * margin * (1 + tau) - self.cpc)
             reward += context_reward
-            #print(f"C_REWARD: {context_reward}")
-        #print(f"REWARD: {reward}")
 
         # MANUAL UPDATE OF THE ADV BANDIT
         self.adv_bandit.daily_collected_rewards = np.append(self.adv_bandit.daily_collected_rewards, reward)

@@ -2,7 +2,7 @@ import copy
 import numpy as np
 
 from learners.pricing.contextual_learner import ContextualLearner
-from learners.pricing.learner import Learner
+from learners.learner import Learner
 
 
 def _print(text, verbose):

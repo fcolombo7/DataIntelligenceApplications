@@ -1,8 +1,8 @@
 import argparse
-from learners.GPTS_Learner_v3 import GPTS_Learner
-from learners.GTS_Learner import GTS_Learner
-from learners.joint_contextual_learner import JointContextualLearner
-from learners.joint_learner_v2 import JointLearner
+from learners.advertisement.gpts import GPTS
+from learners.advertisement.gts import GTS
+from learners.joint.joint_contextual_learner import JointContextualLearner
+from learners.joint.joint_learner import JointLearner
 from learners.pricing.thompson_sampling import ThompsonSampling
 from learners.pricing.ucb import UCB
 from utils.tasks.complete_task import CompleteTask
@@ -19,7 +19,7 @@ def task_builder(simulation_name, source, fixed_adv, fixed_price, selected_bid, 
                             pricing_context=pricing_context
                             )
     if fixed_price:
-        learners = [GTS_Learner, GPTS_Learner]
+        learners = [GTS, GPTS]
     elif fixed_adv:
         learners = [UCB, ThompsonSampling]
     elif pricing_context:

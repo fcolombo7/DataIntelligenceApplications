@@ -1,6 +1,6 @@
 import numpy as np
 
-from learners.pricing.learner import Learner
+from learners.learner import Learner
 
 
 class ContextualLearner:

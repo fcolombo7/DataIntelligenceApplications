@@ -6,7 +6,6 @@ class Learner(ABC):
     """
     Abstract class used to represent online learning algorithms.
     """
-
     LEARNER_NAME = 'ABSTRACT LEARNER'
 
     def __init__(self, arm_values, period=365, next_purchases_update='binomial'):
@@ -42,7 +41,6 @@ class Learner(ABC):
             f'next_purchases_estimation={self.next_purchases_estimation};\n' \
             f'num_samples={num_samples};\n' \
             f'num_outcomes_per_arm={[len(self.outcome_per_arm[arm]) for arm in range(self.n_arms)]};\n'
-            #f'{self.daily_collected_rewards=}'
         return s
 
     def update_observations(self, pulled_arm, outcome, cost):

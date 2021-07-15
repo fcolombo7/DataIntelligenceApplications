@@ -1,12 +1,14 @@
-from learners.pricing.learner import Learner
+from learners.learner import Learner
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
+from sklearn.preprocessing import StandardScaler
 from scipy.stats import norm
 
 
-class GPTS_Learner(Learner):
-    LEARNER_NAME = "GPTS"
+class ScaledGPTS(Learner):
+
+    LEARNER_NAME = "GPTS-Scaled"
 
     def __init__(self, arms):
         super().__init__(arm_values=arms)
@@ -19,8 +21,7 @@ class GPTS_Learner(Learner):
         self.pulled_arms = []
 
         alpha = 40.0
-        #kernel = C(1.0, (1e-3, 1e4)) * RBF(1.0, (1e-3, 1e4))
-        kernel = C(1.0) * RBF(1.0)
+        kernel = C(1.0, (1e-2, 1e5)) * RBF(1.0, (1e-2, 1e5))
         self.gp = GaussianProcessRegressor(kernel=kernel, alpha=alpha ** 2, normalize_y=True, n_restarts_optimizer=9)
 
     def update_observations(self, arm_idx, rewards, cost):
@@ -33,10 +34,16 @@ class GPTS_Learner(Learner):
     def update_model(self):
         x = np.atleast_2d(self.pulled_arms).T
         y = self.daily_collected_rewards
-
-        self.gp.fit(x, y)
-        self.means, self.sigmas = self.gp.predict(np.atleast_2d(self.arms).T, return_std=True)
+        x_scaler = StandardScaler(with_std=False)
+        x_scaler.fit(x)
+        y_scaler = StandardScaler(with_std=False)
+        y_scaler.fit(np.array(y).reshape(-1, 1))
+        x_s = x_scaler.transform(x)
+        y_s = y_scaler.transform(np.array(y).reshape(-1, 1)).reshape(-1)
+        self.gp.fit(x_s, y_s)
+        self.means, self.sigmas = self.gp.predict(x_scaler.transform(np.atleast_2d(self.arms).T), return_std=True)
         self.sigmas = np.maximum(self.sigmas, 1e-2)
+        self.means = y_scaler.inverse_transform(self.means)
 
     def update(self, pulled_arm, rewards, cost=-1):
         self.update_observations(pulled_arm, rewards, cost)
@@ -45,7 +52,7 @@ class GPTS_Learner(Learner):
 
     def pull_arm(self):
         if self.day < 10:
-            return self.day # TODO: CHIEDI SE VA BENE
+            return self.day
         sampled_values = np.random.normal(self.means, self.sigmas)
         sampled_values[self.ineligibility > self.negative_threshold] = 0
         return np.argmax(sampled_values)

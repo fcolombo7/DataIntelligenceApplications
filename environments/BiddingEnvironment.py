@@ -1,4 +1,4 @@
-from environments.Environment import *
+from environments.environment import *
 from sklearn import preprocessing
 
 

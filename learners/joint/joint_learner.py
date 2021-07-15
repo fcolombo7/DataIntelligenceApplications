@@ -2,7 +2,6 @@ import numpy as np
 
 from learners.GPTS_Learner_v3 import GPTS_Learner
 from learners.pricing.thompson_sampling import ThompsonSampling
-from scipy.stats import norm
 
 
 class JointLearner:

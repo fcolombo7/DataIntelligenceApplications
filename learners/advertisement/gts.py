@@ -1,9 +1,10 @@
-from learners.Learner import *
+import numpy as np
 from scipy.stats import norm
-from learners.pricing.learner import Learner
+
+from learners.learner import Learner
 
 
-class GTS_Learner(Learner):
+class GTS(Learner):
 
     LEARNER_NAME = "GTS"
 
@@ -21,7 +22,7 @@ class GTS_Learner(Learner):
             return np.random.choice(self.n_arms)
         penalized_means = self.means
         penalized_means[self.ineligibility > self.negative_threshold] = \
-                penalized_means[self.ineligibility > self.negative_threshold] * self.penalty
+            penalized_means[self.ineligibility > self.negative_threshold] * self.penalty
         sampled_values = np.random.normal(penalized_means, self.sigmas)    
         idx = np.argmax(sampled_values)
         return idx
@@ -32,16 +33,12 @@ class GTS_Learner(Learner):
 
         self.outcome_per_arm[pulled_arm].append(reward)
         self.daily_collected_rewards = np.append(self.daily_collected_rewards, reward)
-        
-        
+
         for arm in range(self.n_arms):
             self.means[arm] = np.mean(self.outcome_per_arm[arm])
-        #self.means[pulled_arm] = np.mean(self.outcome_per_arm[pulled_arm], dtype=np.float64)
-
 
         self.ineligibility[pulled_arm] = norm.cdf(0, self.means[pulled_arm], self.sigmas[pulled_arm])
         n_samples = len(self.outcome_per_arm[pulled_arm])
         if n_samples > 1:
-            #self.sigmas[pulled_arm] = np.std(self.outcome_per_arm[pulled_arm]) / n_samples
             for arm in range(self.n_arms):
                 self.sigmas[arm] = np.std(self.outcome_per_arm[arm]) / n_samples

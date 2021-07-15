@@ -1,5 +1,5 @@
 import numpy as np
-from environments.Environment import Environment
+from environments.environment import Environment
 
 
 class PricingEnvironment(Environment):

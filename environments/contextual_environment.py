@@ -1,6 +1,6 @@
 import numpy as np
 
-from environments.Environment import Environment
+from environments.environment import Environment
 
 
 class ContextualEnvironment(Environment):
@@ -24,7 +24,6 @@ class ContextualEnvironment(Environment):
         self.collected_users_features = {}
         self.selected_arms = {}
         self.day = 0
-        self.collected_users_categories = {} ##ADDED BY flavio
 
     # todo: at first call get_user_features, then round [this is due to the cur.user update]
     def round(self, pulled_arm):
@@ -128,7 +127,6 @@ class ContextualEnvironment(Environment):
             self.daily_users_categories = np.random.choice(list(self.customer_classes.keys()),
                                                            size=self.daily_clicks,
                                                            p=self.customer_distributions).tolist()
-            
 
         elif mode == 'fixed':
             tmp = []
@@ -137,24 +135,9 @@ class ContextualEnvironment(Environment):
             self.daily_users_categories = np.array(tmp)
             np.random.shuffle(self.daily_users_categories)
             self.daily_users_categories=self.daily_users_categories.tolist()
-            
 
         else:
             raise NotImplementedError
-        
-        self.collected_users_categories[self.day,"C1"] = self.daily_users_categories.count("C1")
-        self.collected_users_categories[self.day,"C2"] = self.daily_users_categories.count("C2")
-        self.collected_users_categories[self.day,"C3"] = self.daily_users_categories.count("C3")
-
-        # DEBUG
-        # print(f'#### DEBUG ENV (day: {self.day}) ####')
-        # counters = [0 for k in self.customer_classes.keys()]
-        # for val in self.daily_users_categories:
-        #     counters[list(self.customer_classes.keys()).index(val)] += 1
-        # for i, k in enumerate(self.customer_classes.keys()):
-        #     print(f'{k}: {counters[i]} [{counters[i]/self.daily_clicks}];')
-        # print(f'{self.daily_users_categories[:10]} ... (first 10 only)')
-        # print('\n')
 
     def get_daily_user_features(self, index):
         # list of possible combination of the feature space

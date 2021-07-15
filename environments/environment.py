@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from data_generators.basic_generator import *
-from sklearn import preprocessing
 
 from data_generators.standard_generator import StandardDataGenerator
 

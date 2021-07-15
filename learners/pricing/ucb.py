@@ -1,4 +1,4 @@
-from learners.pricing.learner import Learner
+from learners.learner import Learner
 import numpy as np
 
 
@@ -12,23 +12,8 @@ class UCB(Learner):
         self.confidences = np.array([np.inf] * self.n_arms)
 
     def pull_arm(self) -> int:
-        # OLD AND TESTED VERSION
-        """
-        # now multiply the upper bound with the arm values! that is known
-        upper_bounds = self.empirical_means + self.confidences
+        # multiply the upper bound with the arm values, which is known
         # period * estimation = mean of the binomial
-        # TODO: mean, not parameter of the binomial
-        #  conditions = self.arm_values * (1 + self.period * self.next_purchases_estimation) * upper_bounds
-        conditions = self.arm_values * (1 + self.next_purchases_estimation) * upper_bounds
-        best_arms = np.argwhere(conditions == conditions.max()).reshape(-1)
-        return np.random.choice(best_arms)
-        """
-        # NEW VERSION
-        # now multiply the upper bound with the arm values! that is known
-        # upper_bounds = self.empirical_means + self.confidences
-        # period * estimation = mean of the binomial
-        # TODO: mean, not parameter of the binomial
-        #  conditions = self.arm_values * (1 + self.period * self.next_purchases_estimation) * upper_bounds
         conditions = (self.arm_values * (1 + self.next_purchases_estimation) * self.empirical_means) + self.confidences
         best_arms = np.argwhere(conditions == conditions.max()).reshape(-1)
         return np.random.choice(best_arms)
