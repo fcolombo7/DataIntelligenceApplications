@@ -113,7 +113,6 @@ class StandardDataGenerator(DataGenerator):
             purchases = list(np.maximum(cl['lower_bound'],
                                         cl['coefficient']*(-np.array(self._prices) + self._prices[0]) + cl['upper_bound']))
             future_purchases.append(purchases)
-        # TODO: CHECK HERE! devo mettere decimals = 0 poichè int? Forse no perchè questa è solo la media.
         if mode == 'all':
             return np.around(future_purchases, decimals=3)
         class_distribution = self.get_class_distributions(bid)
@@ -135,7 +134,6 @@ class StandardDataGenerator(DataGenerator):
         for cl in self._daily_clicks:
             clicks_per_bid = list(cl['upper_bound'] * (1.0 - np.exp(-1 * cl['speed_factor'] * np.array(self._bids))))
             daily_clicks.append(clicks_per_bid)
-        # TODO: CHECK HERE! CAMBIATO PER LA 3^ VOLTA.
         if mode == 'all':
             return np.around(daily_clicks, decimals=3)
         # return np.sum(daily_clicks, axis=0)
