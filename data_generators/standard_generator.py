@@ -1,6 +1,8 @@
 from data_generators.data_generator import DataGenerator
 import numpy as np
 import json
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 class StandardDataGenerator(DataGenerator):
@@ -167,8 +169,82 @@ class StandardDataGenerator(DataGenerator):
         return np.array(clicks_at_bid)/np.sum(clicks_at_bid)
 
 
-# DEBUG
-if __name__ == '__main__':
-    dg = StandardDataGenerator("../src/basic001.json")
-    print(dg.get_daily_clicks(mode='all'))
-    print(dg.get_class_distributions(0))
+class Plotter:
+    def __init__(self, filename):
+        self.filename = filename
+        self.dg = StandardDataGenerator(filename)
+        self.categories = list(self.dg.get_classes().keys())
+
+    def plot_conversion_rates(self, aggregate=False, sel_bid=5, figsize=(6, 4), theme='whitegrid'):
+        sns.set_theme(style=theme)
+        plt.figure(figsize=figsize)
+        prices = self.dg.get_prices()
+        plt.xticks(prices)
+        if not aggregate:
+            conv_rates = self.dg.get_conversion_rates()
+            for i in range(0, len(conv_rates)):
+                plt.plot(prices, conv_rates[i], '-o', label=self.categories[i])
+            title = "Conversion rates"
+        else:
+            conv_rate = self.dg.get_conversion_rates(mode='aggregate', bid=sel_bid)
+            plt.plot(prices, conv_rate, '-o', label='aggr. conv. rate')
+            title = "Aggregated conversion rate"
+        plt.legend(loc='best')
+        plt.title(title)
+        plt.show()
+
+    def plot_daily_clicks(self, aggregate=False, figsize=(6, 4), theme='whitegrid'):
+        sns.set_theme(style=theme)
+        plt.figure(figsize=figsize)
+        bids = self.dg.get_bids()
+        plt.xticks(bids, rotation=70)
+        if not aggregate:
+            daily_clicks = self.dg.get_daily_clicks()
+            for i in range(0, len(daily_clicks)):
+                plt.plot(bids, daily_clicks[i], '-o', label=self.categories[i])
+            title = "Daily clicks"
+        else:
+            daily_clicks = self.dg.get_daily_clicks(mode='aggregate')
+            plt.plot(bids, daily_clicks, '-o', label='aggr. daily clicks')
+            title = "Aggregated daily clicks"
+        plt.legend(loc='best')
+        plt.title(title)
+        plt.show()
+
+    def plot_costs_per_clicks(self, aggregate=False, sel_bid=5, figsize=(6, 4), theme='whitegrid'):
+        sns.set_theme(style=theme)
+        plt.figure(figsize=figsize)
+        bids = self.dg.get_bids()
+        plt.xticks(bids, rotation=70)
+        if not aggregate:
+            costs = self.dg.get_costs_per_click()
+            plt.xticks(bids, rotation=70)
+            plt.plot(bids, bids, color='black', label="y=x")
+            for i in range(0, len(costs)):
+                plt.plot(bids, costs[i], '-o', label=self.categories[i])
+            title = "Costs per click"
+        else:
+            costs = self.dg.get_costs_per_click(mode='aggregate', bid=sel_bid)
+            plt.plot(bids, costs, '-o', label='aggr. cpc')
+            title = "Aggregated cost per click"
+        plt.legend(loc='best')
+        plt.title(title)
+        plt.show()
+
+    def plot_next_purchases(self, aggregate=False, sel_bid=5, figsize=(6, 4), theme='whitegrid'):
+        sns.set_theme(style=theme)
+        plt.figure(figsize=figsize)
+        prices = self.dg.get_prices()
+        plt.xticks(prices)
+        if not aggregate:
+            next_purch = self.dg.get_future_purchases()
+            for i in range(0, len(next_purch)):
+                plt.plot(prices, next_purch[i], '-o', label=self.categories[i])
+            title = "Future purchases"
+        else:
+            next_purch = self.dg.get_future_purchases(mode='aggregate', bid=sel_bid)
+            plt.plot(prices, next_purch, '-o', label='aggr. tau')
+            title = "Aggregated future purchases"
+        plt.legend(loc='best')
+        plt.title(title)
+        plt.show()

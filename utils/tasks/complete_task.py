@@ -206,7 +206,7 @@ class CompleteTask(Task):
             self.cg_confidence = self.metadata['CG_CONFIDENCE']
         self._compute_opt_values()
 
-    def plot(self, plot_number=0, figsize=(10, 8), theme="whitegrid") -> None:
+    def plot(self, plot_number=0, figsize=(10, 8), theme="whitegrid", logn=False, logn_coeff=2000) -> None:
         assert self.ready
         if plot_number < 0 or plot_number > 2:
             raise TypeError("`plot_number` kwarg error: only 3 plot are available.")
@@ -223,8 +223,10 @@ class CompleteTask(Task):
                 opt = self.aggr_opt
             for val in self.result['rewards'].values():
                 plt.plot(np.cumsum(opt - val))
-            #plt.plot(1000*np.sqrt(np.linspace(0, 364, 365))+15000, '--')
-            labels = list(self.result['rewards'].keys()) + ['O(sqrt(T))']
+            labels = list(self.result['rewards'].keys())
+            if logn:
+                plt.plot(logn_coeff*np.sqrt(np.linspace(0, self.T-1, self.T)), '--')
+                labels = labels + ['O(sqrt(T))']
             plt.legend(labels)
             plt.title("Cumulative regret")
             plt.show()
@@ -233,7 +235,8 @@ class CompleteTask(Task):
             plt.figure(1, figsize=figsize)
             plt.xlabel("Day")
             plt.ylabel("Daily reward")
-            plt.plot([self.disaggr_opt] * self.T, '--g', label='clairvoyant')
+            if self.disaggr_opt is not None:
+                plt.plot([self.disaggr_opt] * self.T, '--g', label='clairvoyant')
             plt.plot([self.aggr_opt] * self.T, '--c', label='aggr_clairvoyant')
             for key in self.result['rewards']:
                 plt.plot(self.result['rewards'][key], label=key)
@@ -255,6 +258,8 @@ class CompleteTask(Task):
             plt.show()
 
     def _compute_opt_values(self):
+        self.disaggr_opt = None
+        self.aggr_opt = None
         if self.fixed_adv:
             fixed_cost = self.costs_per_click[self.selected_bid]
             fixed_n_clicks = np.rint(self.data_generator.get_daily_clicks(mode='aggregate')[self.selected_bid]).astype(
