@@ -206,7 +206,7 @@ class CompleteTask(Task):
             self.cg_confidence = self.metadata['CG_CONFIDENCE']
         self._compute_opt_values()
 
-    def plot(self, plot_number=0, figsize=(10, 8), theme="whitegrid", logn=False, logn_coeff=2500) -> None:
+    def plot(self, plot_number=0, figsize=(10, 8), theme="whitegrid", sqrt=False, sqrt_coeff=2500) -> None:
         assert self.ready
         if plot_number < 0 or plot_number > 2:
             raise TypeError("`plot_number` kwarg error: only 3 plot are available.")
@@ -224,8 +224,8 @@ class CompleteTask(Task):
             for val in self.result['rewards'].values():
                 plt.plot(np.cumsum(opt - val))
             labels = list(self.result['rewards'].keys())
-            if logn:
-                plt.plot(logn_coeff*np.sqrt(np.linspace(0, self.T-1, self.T)), '--')
+            if sqrt:
+                plt.plot(sqrt_coeff*np.sqrt(np.linspace(0, self.T-1, self.T)), '--')
                 labels = labels + ['O(sqrt(T))']
             plt.legend(labels)
             plt.title("Cumulative regret")
