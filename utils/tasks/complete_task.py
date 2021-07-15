@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import seaborn as sns
 from environments.complete_environment import CompleteEnvironment
 
 from learners.pricing.contextual_learner import ContextualLearner
@@ -206,12 +206,12 @@ class CompleteTask(Task):
             self.cg_confidence = self.metadata['CG_CONFIDENCE']
         self._compute_opt_values()
 
-    def plot(self, plot_number=0, figsize=(10, 8), theme="white") -> None:
+    def plot(self, plot_number=0, figsize=(10, 8), theme="whitegrid") -> None:
         assert self.ready
         if plot_number < 0 or plot_number > 2:
             raise TypeError("`plot_number` kwarg error: only 3 plot are available.")
 
-        #sns.set_theme(style=theme)
+        sns.set_theme(style=theme)
 
         if plot_number == 0:
             plt.figure(0, figsize=figsize)
